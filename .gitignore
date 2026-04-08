@@ -37,3 +37,5 @@ Thumbs.db
 .netlify/
 
 mcp.json
+
+node_modules/

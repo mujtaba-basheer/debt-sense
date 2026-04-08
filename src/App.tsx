@@ -1,8 +1,8 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import Dashboard from '@/pages/Dashboard'
-import FriendsList from '@/pages/FriendsList'
-import FriendStatement from '@/pages/FriendStatement'
-import AddTransaction from '@/pages/AddTransaction'
+import { Routes, Route, Navigate } from "react-router-dom";
+import Dashboard from "@/pages/Dashboard";
+import FriendsList from "@/pages/FriendsList";
+import FriendStatement from "@/pages/FriendStatement";
+import AddTransaction from "@/pages/AddTransaction";
 
 export default function App() {
   return (
@@ -13,5 +13,5 @@ export default function App() {
       <Route path="/friends/:friendId" element={<FriendStatement />} />
       <Route path="/transactions/add" element={<AddTransaction />} />
     </Routes>
-  )
+  );
 }
