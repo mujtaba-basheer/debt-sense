@@ -130,50 +130,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StatPill({
-  label,
-  value,
-  positive,
-}: {
-  label: string;
-  value: number;
-  positive?: boolean;
-}) {
-  return (
-    <Box
-      sx={{
-        flex: 1,
-        bgcolor: COLORS.surfaceContainerLowest,
-        borderRadius: 3,
-        px: 2.5,
-        py: 2,
-        boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
-      }}
-    >
-      <Typography
-        variant="caption"
-        sx={{ color: COLORS.onSurfaceVariant, display: "block", mb: 0.5 }}
-      >
-        {label}
-      </Typography>
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 700,
-          letterSpacing: "-0.02em",
-          color:
-            positive === undefined
-              ? COLORS.onSurface
-              : positive
-              ? COLORS.primary
-              : COLORS.tertiary,
-        }}
-      >
-        {fmtShort(value)}
-      </Typography>
-    </Box>
-  );
-}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
