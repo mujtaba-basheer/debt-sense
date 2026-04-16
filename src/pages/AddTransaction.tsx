@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
 import {
   Box,
   Typography,
@@ -14,6 +15,7 @@ import {
   Chip,
   Divider,
   Avatar,
+  FormHelperText,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import AttachFileRoundedIcon from "@mui/icons-material/AttachFileRounded";
@@ -27,18 +29,12 @@ import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import LocalGroceryStoreRoundedIcon from "@mui/icons-material/LocalGroceryStoreRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import { COLORS } from "@/theme";
-
-// ─── Data ──────────────────────────────────────────────────────────────────────
-
-const FRIENDS = [
-  { id: "1", name: "Julian Casablancas", initials: "JC", avatarColor: "#006c49" },
-  { id: "2", name: "Amelie Poulain", initials: "AP", avatarColor: "#a43a3a" },
-  { id: "3", name: "Albert Hammond Jr.", initials: "AH", avatarColor: "#376850" },
-  { id: "4", name: "Elena Rodriguez", initials: "ER", avatarColor: "#005236" },
-  { id: "5", name: "Marko V.", initials: "MV", avatarColor: "#3c6c54" },
-  { id: "6", name: "Sarah Jenkins", initials: "SJ", avatarColor: "#006c49" },
-  { id: "7", name: "Alex Rivera", initials: "AR", avatarColor: "#376850" },
-];
+import {
+  addTransactionSchema,
+  addTransactionInitialValues,
+  type AddTransactionValues,
+} from "@/logic/transaction";
+import type { Friend } from "@/types/friend";
 
 const CATEGORIES = [
   { value: "dining", label: "Dining", icon: <RestaurantRoundedIcon sx={{ fontSize: 18 }} /> },
@@ -90,26 +86,41 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
+function validate(values: AddTransactionValues) {
+  const result = addTransactionSchema.safeParse(values);
+  if (result.success) return {};
+  return result.error.issues.reduce<Record<string, string>>((acc, issue) => {
+    const key = issue.path[0] as string;
+    if (!acc[key]) acc[key] = issue.message;
+    return acc;
+  }, {});
+}
+
 export default function AddTransaction() {
   const navigate = useNavigate();
 
-  const [type, setType] = useState<"lent" | "borrowed">("lent");
-  const [amount, setAmount] = useState("");
-  const [friendId, setFriendId] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [category, setCategory] = useState("");
-  const [notes, setNotes] = useState("");
-  const [receiptAttached, setReceiptAttached] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
 
-  const selectedFriend = FRIENDS.find((f) => f.id === friendId);
-  const isLent = type === "lent";
+  useEffect(() => {
+    fetch("/api/friend")
+      .then((res) => res.json())
+      .then((data: { friends: Friend[] }) => setFriends(data.friends))
+      .catch(() => {});
+  }, []);
+
+  const formik = useFormik<AddTransactionValues>({
+    initialValues: addTransactionInitialValues,
+    validate,
+    validateOnChange: true,
+    validateOnBlur: true,
+    onSubmit: async (_values, _helpers) => {
+      // TODO: wire up to Netlify DB
+    },
+  });
+
+  const selectedFriend = friends.find((f) => f.id === formik.values.friendId);
+  const isLent = formik.values.type === "lent";
   const accentColor = isLent ? COLORS.primary : COLORS.tertiary;
-  const canSubmit = amount !== "" && parseFloat(amount) > 0 && friendId !== "" && category !== "";
-
-  const handleSubmit = () => {
-    // TODO: wire up to Netlify DB
-    navigate("/dashboard");
-  };
 
   return (
     <Box sx={{ maxWidth: 600 }}>
@@ -142,20 +153,20 @@ export default function AddTransaction() {
         </Typography>
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+      <Box component="form" onSubmit={formik.handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
         {/* ── Type + Amount card ── */}
         <SectionCard>
           {/* Lent / Borrowed toggle */}
           <FieldLabel>Transaction type</FieldLabel>
           <ToggleButtonGroup
-            value={type}
+            value={formik.values.type}
             exclusive
-            onChange={(_, v) => v && setType(v)}
+            onChange={(_, v) => v && formik.setFieldValue("type", v)}
             fullWidth
             sx={{ mb: 3 }}
           >
             {(["lent", "borrowed"] as const).map((t) => {
-              const active = type === t;
+              const active = formik.values.type === t;
               const color = t === "lent" ? COLORS.primary : COLORS.tertiary;
               return (
                 <ToggleButton
@@ -189,11 +200,14 @@ export default function AddTransaction() {
           {/* Amount */}
           <FieldLabel>Amount</FieldLabel>
           <OutlinedInput
-            value={amount}
+            name="amount"
+            value={formik.values.amount}
             onChange={(e) => {
               const v = e.target.value;
-              if (/^\d*\.?\d{0,2}$/.test(v)) setAmount(v);
+              if (/^\d*\.?\d{0,2}$/.test(v)) formik.setFieldValue("amount", v);
             }}
+            onBlur={formik.handleBlur}
+            error={formik.touched.amount && Boolean(formik.errors.amount)}
             placeholder="0.00"
             startAdornment={
               <InputAdornment position="start">
@@ -213,16 +227,22 @@ export default function AddTransaction() {
               "& input::placeholder": { color: COLORS.surfaceContainerHighest, opacity: 1 },
             }}
           />
+          {formik.touched.amount && formik.errors.amount && (
+            <FormHelperText error sx={{ mx: 0, mt: 0.5 }}>{formik.errors.amount}</FormHelperText>
+          )}
         </SectionCard>
 
         {/* ── Friend card ── */}
         <SectionCard>
           <FieldLabel>Friend</FieldLabel>
           <Select
-            value={friendId}
-            onChange={(e) => setFriendId(e.target.value)}
+            name="friendId"
+            value={formik.values.friendId}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             displayEmpty
             fullWidth
+            error={formik.touched.friendId && Boolean(formik.errors.friendId)}
             renderValue={() =>
               selectedFriend ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -230,7 +250,7 @@ export default function AddTransaction() {
                     sx={{
                       width: 28,
                       height: 28,
-                      bgcolor: selectedFriend.avatarColor,
+                      bgcolor: selectedFriend.avatar_color,
                       fontSize: "0.7rem",
                       fontWeight: 700,
                       color: "#fff",
@@ -254,14 +274,14 @@ export default function AddTransaction() {
               "& fieldset": { border: "none" },
             }}
           >
-            {FRIENDS.map((f) => (
+            {friends.map((f) => (
               <MenuItem key={f.id} value={f.id}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <Avatar
                     sx={{
                       width: 28,
                       height: 28,
-                      bgcolor: f.avatarColor,
+                      bgcolor: f.avatar_color,
                       fontSize: "0.7rem",
                       fontWeight: 700,
                       color: "#fff",
@@ -276,6 +296,9 @@ export default function AddTransaction() {
               </MenuItem>
             ))}
           </Select>
+          {formik.touched.friendId && formik.errors.friendId && (
+            <FormHelperText error sx={{ mx: 0, mt: 0.5 }}>{formik.errors.friendId}</FormHelperText>
+          )}
         </SectionCard>
 
         {/* ── Date + Category card ── */}
@@ -283,9 +306,11 @@ export default function AddTransaction() {
           {/* Date */}
           <FieldLabel>Date</FieldLabel>
           <TextField
+            name="date"
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={formik.values.date}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             fullWidth
             sx={{
               mb: 3,
@@ -301,7 +326,7 @@ export default function AddTransaction() {
           <FieldLabel>Category</FieldLabel>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             {CATEGORIES.map((cat) => {
-              const active = category === cat.value;
+              const active = formik.values.category === cat.value;
               return (
                 <Chip
                   key={cat.value}
@@ -318,9 +343,9 @@ export default function AddTransaction() {
                     </Box>
                   }
                   label={cat.label}
-                  onClick={() => setCategory(active ? "" : cat.value)}
+                  onClick={() => formik.setFieldValue("category", active ? null : cat.value)}
                   deleteIcon={active ? <CheckRoundedIcon sx={{ fontSize: "14px !important" }} /> : undefined}
-                  onDelete={active ? () => setCategory("") : undefined}
+                  onDelete={active ? () => formik.setFieldValue("category", null) : undefined}
                   sx={{
                     bgcolor: active ? `${accentColor}18` : COLORS.surfaceContainerLow,
                     color: active ? accentColor : COLORS.onSurfaceVariant,
@@ -341,8 +366,10 @@ export default function AddTransaction() {
         <SectionCard>
           <FieldLabel>Notes (optional)</FieldLabel>
           <OutlinedInput
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            name="notes"
+            value={formik.values.notes}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             placeholder="Add a note about this transaction…"
             multiline
             rows={3}
@@ -359,7 +386,8 @@ export default function AddTransaction() {
           <Divider sx={{ mb: 2.5 }} />
 
           <Box
-            onClick={() => setReceiptAttached((v) => !v)}
+            component="label"
+            htmlFor="receipt-upload"
             sx={{
               display: "flex",
               alignItems: "center",
@@ -367,9 +395,9 @@ export default function AddTransaction() {
               cursor: "pointer",
               p: 1.5,
               borderRadius: 2,
-              bgcolor: receiptAttached ? `${COLORS.primary}10` : COLORS.surfaceContainerLow,
+              bgcolor: formik.values.receipt ? `${COLORS.primary}10` : COLORS.surfaceContainerLow,
               transition: "background-color 0.15s ease",
-              "&:hover": { bgcolor: receiptAttached ? `${COLORS.primary}18` : COLORS.surfaceContainerHigh },
+              "&:hover": { bgcolor: formik.values.receipt ? `${COLORS.primary}18` : COLORS.surfaceContainerHigh },
             }}
           >
             <Box
@@ -377,42 +405,41 @@ export default function AddTransaction() {
                 width: 36,
                 height: 36,
                 borderRadius: 2,
-                bgcolor: receiptAttached ? `${COLORS.primary}18` : COLORS.surfaceContainerHigh,
+                bgcolor: formik.values.receipt ? `${COLORS.primary}18` : COLORS.surfaceContainerHigh,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: receiptAttached ? COLORS.primary : COLORS.onSurfaceVariant,
+                color: formik.values.receipt ? COLORS.primary : COLORS.onSurfaceVariant,
                 flexShrink: 0,
               }}
             >
               <AttachFileRoundedIcon sx={{ fontSize: 18 }} />
             </Box>
             <Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: receiptAttached ? COLORS.primary : COLORS.onSurface,
-                }}
-              >
-                {receiptAttached ? "Receipt attached" : "Attach Receipt"}
+              <Typography variant="body2" sx={{ fontWeight: 600, color: formik.values.receipt ? COLORS.primary : COLORS.onSurface }}>
+                {formik.values.receipt ? formik.values.receipt.name : "Attach Receipt"}
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-              >
-                {receiptAttached ? "Tap to remove" : "Photo, PDF, or image file"}
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}>
+                {formik.values.receipt ? "Click to change" : "Photo, PDF, or image file"}
               </Typography>
             </Box>
-            {receiptAttached && (
+            {formik.values.receipt && (
               <CheckRoundedIcon sx={{ ml: "auto", color: COLORS.primary, fontSize: 18 }} />
             )}
           </Box>
+          <input
+            id="receipt-upload"
+            type="file"
+            accept="image/*,.pdf"
+            hidden
+            onChange={(e) => formik.setFieldValue("receipt", e.currentTarget.files?.[0] ?? undefined)}
+          />
         </SectionCard>
 
         {/* ── Actions ── */}
         <Box sx={{ display: "flex", gap: 2, pt: 1, pb: 4 }}>
           <Button
+            type="button"
             variant="outlined"
             fullWidth
             onClick={() => navigate(-1)}
@@ -431,16 +458,16 @@ export default function AddTransaction() {
             Cancel
           </Button>
           <Button
+            type="submit"
             variant="contained"
             fullWidth
-            disabled={!canSubmit}
-            onClick={handleSubmit}
+            disabled={formik.isSubmitting || !formik.isValid || !formik.dirty}
             sx={{
               py: 1.5,
               borderRadius: 2,
               fontWeight: 700,
               fontSize: "0.9375rem",
-              background: canSubmit
+              background: (formik.isValid && formik.dirty)
                 ? `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryContainer} 100%)`
                 : undefined,
             }}

@@ -28,6 +28,7 @@ import {
 interface Props {
   open: boolean;
   onClose: () => void;
+  onAdded: () => void;
 }
 
 function validate(values: AddFriendValues) {
@@ -40,7 +41,7 @@ function validate(values: AddFriendValues) {
   }, {});
 }
 
-export default function AddFriendModal({ open, onClose }: Props) {
+export default function AddFriendModal({ open, onClose, onAdded }: Props) {
   const formik = useFormik<AddFriendValues>({
     initialValues: addFriendInitialValues,
     validate,
@@ -65,6 +66,7 @@ export default function AddFriendModal({ open, onClose }: Props) {
       }
 
       helpers.resetForm();
+      onAdded();
       onClose();
     },
   });

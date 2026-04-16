@@ -294,7 +294,8 @@ export default function FriendsList() {
   const [sort, setSort] = useState<SortKey>("balance");
   const [addFriendOpen, setAddFriendOpen] = useState(false);
 
-  useEffect(() => {
+  function fetchFriends() {
+    setLoading(true);
     fetch("/api/friend")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load friends");
@@ -305,7 +306,9 @@ export default function FriendsList() {
       )
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { fetchFriends(); }, []);
 
   const theyOweYou = friends
     .filter((f) => f.balance > 0)
@@ -691,6 +694,7 @@ export default function FriendsList() {
       <AddFriendModal
         open={addFriendOpen}
         onClose={() => setAddFriendOpen(false)}
+        onAdded={fetchFriends}
       />
     </Box>
   );
