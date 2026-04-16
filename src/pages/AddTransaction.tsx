@@ -113,8 +113,28 @@ export default function AddTransaction() {
     validate,
     validateOnChange: true,
     validateOnBlur: true,
-    onSubmit: async (_values, _helpers) => {
-      // TODO: wire up to Netlify DB
+    onSubmit: async (values, helpers) => {
+      const res = await fetch("/api/transaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: values.type,
+          amount: values.amount,
+          friendId: values.friendId,
+          date: values.date,
+          category: values.category,
+          notes: values.notes,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        helpers.setStatus({ serverError: data.error ?? "Something went wrong" });
+        helpers.setSubmitting(false);
+        return;
+      }
+
+      navigate(-1);
     },
   });
 
@@ -437,6 +457,9 @@ export default function AddTransaction() {
         </SectionCard>
 
         {/* ── Actions ── */}
+        {formik.status?.serverError && (
+          <FormHelperText error sx={{ mx: 0 }}>{formik.status.serverError}</FormHelperText>
+        )}
         <Box sx={{ display: "flex", gap: 2, pt: 1, pb: 4 }}>
           <Button
             type="button"
