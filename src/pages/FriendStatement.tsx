@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
@@ -20,6 +20,7 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { COLORS } from "@/theme";
 import { fmt, CATEGORY_ICONS } from "@/utils";
 import DeleteFriendModal from "@/components/DeleteFriendModal";
+import type { Friend as ApiFriend } from "@/types/friend";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -56,94 +57,35 @@ interface FriendData {
   categoryBreakdown: { label: string; pct: number; color: string }[];
 }
 
-// ─── Dummy data ────────────────────────────────────────────────────────────────
+// ─── Static placeholder data (until transactions table exists) ─────────────────
 
-const FRIENDS_DATA: Record<string, FriendData> = {
-  "1": {
-    id: "1",
-    name: "Julian Casablancas",
-    initials: "JC",
-    avatarColor: "#006c49",
-    group: "NYC Creative Group",
-    balance: 3240,
-    balanceChange: 12,
-    trustLevel: "Elite",
-    trustStreak: "8-month streak of settling balances within 24 hours",
-    friendSince: "March 2022",
-    totalTransactions: 58,
-    transactions: [
-      { id: "t1", description: "Dinner at Le Bernardin", category: "dining", date: "Apr 7, 2026", total: 236.4, yourShare: 118.2 },
-      { id: "t2", description: "Concert tickets", category: "leisure", date: "Apr 3, 2026", total: 160, yourShare: 80 },
-      { id: "t3", description: "Grocery run", category: "groceries", date: "Mar 28, 2026", total: 87.5, yourShare: 43.75 },
-      { id: "t4", description: "Cab to airport", category: "transport", date: "Mar 22, 2026", total: 31, yourShare: 15.5 },
-    ],
-    sharedGroups: [
-      { name: "Hamptons Beach House", members: 5, yourShare: 1200, dueDate: "May 1, 2026" },
-      { name: "Tokyo Trip 2026", members: 3, yourShare: 2400, dueDate: "Aug 15, 2026" },
-    ],
-    categoryBreakdown: [
-      { label: "Dining", pct: 65, color: COLORS.primary },
-      { label: "Transport", pct: 20, color: COLORS.secondary },
-      { label: "Leisure", pct: 15, color: COLORS.primaryFixedDim },
-    ],
-  },
-  "2": {
-    id: "2",
-    name: "Amelie Poulain",
-    initials: "AP",
-    avatarColor: "#a43a3a",
-    group: "Travel & Events",
-    balance: -1150,
-    balanceChange: -8,
-    trustLevel: "Trusted",
-    trustStreak: "Usually settles within 1 week",
-    friendSince: "January 2024",
-    totalTransactions: 21,
-    transactions: [
-      { id: "t1", description: "Paris hotel split", category: "leisure", date: "Apr 1, 2026", total: 980, yourShare: -490 },
-      { id: "t2", description: "Train tickets", category: "transport", date: "Mar 30, 2026", total: 220, yourShare: -110 },
-      { id: "t3", description: "Restaurant L'Ami Jean", category: "dining", date: "Mar 29, 2026", total: 148, yourShare: -74 },
-      { id: "t4", description: "Museum tickets", category: "leisure", date: "Mar 28, 2026", total: 52, yourShare: -26 },
-    ],
-    sharedGroups: [
-      { name: "European Road Trip", members: 4, yourShare: -1400, dueDate: "Jun 10, 2026" },
-    ],
-    categoryBreakdown: [
-      { label: "Leisure", pct: 55, color: COLORS.primary },
-      { label: "Transport", pct: 28, color: COLORS.secondary },
-      { label: "Dining", pct: 17, color: COLORS.primaryFixedDim },
-    ],
-  },
+const STATIC_PLACEHOLDER: Pick<
+  FriendData,
+  "balance" | "balanceChange" | "trustLevel" | "trustStreak" | "friendSince" | "totalTransactions" | "transactions" | "sharedGroups" | "categoryBreakdown"
+> = {
+  balance: 0,
+  balanceChange: 0,
+  trustLevel: "New",
+  trustStreak: "No transactions yet",
+  friendSince: "—",
+  totalTransactions: 0,
+  transactions: [],
+  sharedGroups: [],
+  categoryBreakdown: [],
 };
 
-const DEFAULT_FRIEND: FriendData = {
-  id: "0",
-  name: "Sarah Miller",
-  initials: "SM",
-  avatarColor: "#006c49",
-  group: "Flatmates",
-  balance: 245.5,
-  balanceChange: 12,
-  trustLevel: "Elite",
-  trustStreak: "8-month streak of settling balances within 24 hours",
-  friendSince: "April 2023",
-  totalTransactions: 42,
-  transactions: [
-    { id: "t1", description: "Dinner at Nobu", category: "dining", date: "Apr 7, 2026", total: 236.4, yourShare: 118.2 },
-    { id: "t2", description: "Netflix & Spotify split", category: "leisure", date: "Apr 1, 2026", total: 31, yourShare: 15.5 },
-    { id: "t3", description: "Weekly groceries", category: "groceries", date: "Mar 30, 2026", total: 143.8, yourShare: 71.9 },
-    { id: "t4", description: "Uber to airport", category: "transport", date: "Mar 22, 2026", total: 39.8, yourShare: 19.9 },
-  ],
-  sharedGroups: [
-    { name: "Beach House Rental", members: 5, yourShare: 800, dueDate: "May 20, 2026" },
-    { name: "Tokyo Trip 2026", members: 3, yourShare: 2400, dueDate: "Aug 15, 2026" },
-  ],
-  categoryBreakdown: [
-    { label: "Dining", pct: 65, color: COLORS.primary },
-    { label: "Transport", pct: 20, color: COLORS.secondary },
-    { label: "Leisure", pct: 15, color: COLORS.primaryFixedDim },
-  ],
-};
+// ─── API → local shape mapper ──────────────────────────────────────────────────
+
+function toFriendData(f: ApiFriend): FriendData {
+  return {
+    id: f.id,
+    name: f.name,
+    initials: f.initials,
+    avatarColor: f.avatar_color,
+    group: f.relation, // TODO: replace with real group once that exists
+    ...STATIC_PLACEHOLDER,
+  };
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -289,9 +231,71 @@ export default function FriendStatement() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  const [friend, setFriend] = useState<FriendData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const friend = (friendId ? FRIENDS_DATA[friendId] : undefined) ?? DEFAULT_FRIEND;
+  useEffect(() => {
+    if (!friendId) return;
+    fetch(`/api/friend/${friendId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Friend not found");
+        return res.json();
+      })
+      .then((data: { friend: ApiFriend }) => setFriend(toFriendData(data.friend)))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [friendId]);
+
+  if (loading) {
+    return (
+      <Box sx={{ maxWidth: { xs: "100%", md: 720 } }}>
+        <Button
+          startIcon={<ArrowBackRoundedIcon />}
+          onClick={() => navigate("/friends")}
+          sx={{ mb: 3, color: COLORS.onSurfaceVariant, fontWeight: 500, px: 0, "&:hover": { bgcolor: "transparent" } }}
+          disableRipple
+        >
+          Friends
+        </Button>
+        {[120, 80, 80].map((h, i) => (
+          <Box
+            key={i}
+            sx={{
+              height: h,
+              borderRadius: 3,
+              bgcolor: COLORS.surfaceContainerLowest,
+              mb: 2,
+              animation: "pulse 1.5s ease-in-out infinite",
+              "@keyframes pulse": { "0%, 100%": { opacity: 1 }, "50%": { opacity: 0.4 } },
+            }}
+          />
+        ))}
+      </Box>
+    );
+  }
+
+  if (error || !friend) {
+    return (
+      <Box sx={{ maxWidth: { xs: "100%", md: 720 } }}>
+        <Button
+          startIcon={<ArrowBackRoundedIcon />}
+          onClick={() => navigate("/friends")}
+          sx={{ mb: 3, color: COLORS.onSurfaceVariant, fontWeight: 500, px: 0, "&:hover": { bgcolor: "transparent" } }}
+          disableRipple
+        >
+          Friends
+        </Button>
+        <Box sx={{ py: 8, textAlign: "center", bgcolor: COLORS.surfaceContainerLowest, borderRadius: 3 }}>
+          <Typography variant="body1" sx={{ color: COLORS.tertiary }}>
+            {error ?? "Friend not found"}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   const isPositive = friend.balance >= 0;
 
   // Format balance as split int + decimal for mobile large display
@@ -509,7 +513,7 @@ export default function FriendStatement() {
               Recent Transactions
             </Typography>
             <SectionCard>
-              {friend.transactions.map((tx, i) => (
+              {friend.transactions.map((tx: Transaction, i: number) => (
                 <Box key={tx.id}>
                   <TransactionRow tx={tx} />
                   {i < friend.transactions.length - 1 && <Divider />}
@@ -534,7 +538,7 @@ export default function FriendStatement() {
               Shared Commitments
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {friend.sharedGroups.map((g) => (
+              {friend.sharedGroups.map((g: SharedGroup) => (
                 <SharedCommitmentCard key={g.name} g={g} />
               ))}
             </Box>
@@ -667,7 +671,7 @@ export default function FriendStatement() {
               Recent Transactions
             </Typography>
             <SectionCard>
-              {friend.transactions.map((tx, i) => (
+              {friend.transactions.map((tx: Transaction, i: number) => (
                 <Box key={tx.id}>
                   <TransactionRow tx={tx} />
                   {i < friend.transactions.length - 1 && <Divider />}
@@ -703,13 +707,10 @@ export default function FriendStatement() {
 
       <DeleteFriendModal
         open={deleteOpen}
+        friendId={friend.id}
         friendName={friend.name}
         onClose={() => setDeleteOpen(false)}
-        onConfirm={() => {
-          // TODO: wire up to backend
-          setDeleteOpen(false);
-          navigate("/friends");
-        }}
+        onDeleted={() => navigate("/friends")}
       />
     </Box>
   );

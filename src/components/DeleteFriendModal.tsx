@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -5,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  FormHelperText,
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteForeverRoundedIcon from "@mui/icons-material/DeleteForeverRounded";
@@ -13,16 +15,44 @@ import { COLORS } from "@/theme";
 
 interface Props {
   open: boolean;
+  friendId: string;
   friendName: string;
   onClose: () => void;
-  onConfirm: () => void;
+  onDeleted: () => void;
 }
 
-export default function DeleteFriendModal({ open, friendName, onClose, onConfirm }: Props) {
+export default function DeleteFriendModal({ open, friendId, friendName, onClose, onDeleted }: Props) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/friend/${friendId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Failed to delete friend");
+        return;
+      }
+      onDeleted();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleClose() {
+    if (loading) return;
+    setError(null);
+    onClose();
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="xs"
       fullWidth
       PaperProps={{
@@ -42,7 +72,8 @@ export default function DeleteFriendModal({ open, friendName, onClose, onConfirm
             Delete Friend
           </Typography>
           <IconButton
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={loading}
             size="small"
             sx={{
               color: COLORS.onSurfaceVariant,
@@ -73,24 +104,12 @@ export default function DeleteFriendModal({ open, friendName, onClose, onConfirm
 
         {/* Message */}
         <Typography
-          sx={{
-            fontWeight: 700,
-            fontSize: "1rem",
-            color: COLORS.onSurface,
-            textAlign: "center",
-            mb: 1,
-          }}
+          sx={{ fontWeight: 700, fontSize: "1rem", color: COLORS.onSurface, textAlign: "center", mb: 1 }}
         >
           Remove {friendName}?
         </Typography>
         <Typography
-          sx={{
-            fontSize: "0.875rem",
-            color: COLORS.onSurfaceVariant,
-            textAlign: "center",
-            lineHeight: 1.6,
-            mb: 3.5,
-          }}
+          sx={{ fontSize: "0.875rem", color: COLORS.onSurfaceVariant, textAlign: "center", lineHeight: 1.6, mb: 3.5 }}
         >
           This will permanently delete{" "}
           <Box component="span" sx={{ fontWeight: 700, color: COLORS.onSurface }}>
@@ -99,10 +118,17 @@ export default function DeleteFriendModal({ open, friendName, onClose, onConfirm
           and all their transaction history. This action cannot be undone.
         </Typography>
 
+        {error && (
+          <FormHelperText error sx={{ textAlign: "center", mb: 2 }}>
+            {error}
+          </FormHelperText>
+        )}
+
         {/* Actions */}
         <Box sx={{ display: "flex", gap: 1.5 }}>
           <Button
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={loading}
             fullWidth
             sx={{
               py: 1.5,
@@ -116,7 +142,8 @@ export default function DeleteFriendModal({ open, friendName, onClose, onConfirm
             Cancel
           </Button>
           <Button
-            onClick={onConfirm}
+            onClick={handleDelete}
+            loading={loading}
             fullWidth
             startIcon={<DeleteForeverRoundedIcon />}
             sx={{
