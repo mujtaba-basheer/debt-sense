@@ -12,7 +12,6 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
-import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRounded";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
@@ -519,18 +518,20 @@ export default function FriendStatement() {
                 Settle Up
               </Button>
               <Button
-                startIcon={<NotificationsRoundedIcon />}
+                variant="outlined"
+                startIcon={<DeleteOutlineRoundedIcon />}
+                onClick={() => setDeleteOpen(true)}
                 sx={{
                   flex: 1,
                   py: 1.75,
                   borderRadius: 2,
                   fontWeight: 700,
-                  bgcolor: COLORS.surfaceContainerHigh,
-                  color: COLORS.onSecondaryContainer,
-                  "&:hover": { bgcolor: COLORS.surfaceContainerHighest },
+                  borderColor: `${COLORS.error}44`,
+                  color: COLORS.error,
+                  "&:hover": { borderColor: COLORS.error, bgcolor: COLORS.errorContainer },
                 }}
               >
-                Reminder
+                Delete
               </Button>
             </Box>
           </Box>
@@ -541,12 +542,21 @@ export default function FriendStatement() {
               Recent Transactions
             </Typography>
             <SectionCard>
-              {friend.transactions.map((tx: Transaction, i: number) => (
-                <Box key={tx.id}>
-                  <TransactionRow tx={tx} />
-                  {i < friend.transactions.length - 1 && <Divider />}
-                </Box>
-              ))}
+              {friend.transactions.length === 0 ? (
+                <Typography
+                  variant="body2"
+                  sx={{ color: COLORS.onSurfaceVariant, textAlign: "center", py: 3 }}
+                >
+                  No transactions with {friend.name} yet.
+                </Typography>
+              ) : (
+                friend.transactions.map((tx: Transaction, i: number) => (
+                  <Box key={tx.id}>
+                    <TransactionRow tx={tx} />
+                    {i < friend.transactions.length - 1 && <Divider />}
+                  </Box>
+                ))
+              )}
             </SectionCard>
           </Box>
 
@@ -635,20 +645,12 @@ export default function FriendStatement() {
                 <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: "block", mb: 0.5 }}>
                   {isPositive ? "They owe you" : "You owe them"}
                 </Typography>
-                <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-                  <Typography
-                    variant="h3"
-                    sx={{ fontWeight: 700, color: isPositive ? COLORS.primary : COLORS.tertiary, letterSpacing: "-0.03em" }}
-                  >
-                    {fmt(friend.balance)}
-                  </Typography>
-                  <Chip
-                    label={`${friend.balanceChange > 0 ? "+" : ""}${friend.balanceChange}% this month`}
-                    size="small"
-                    color={friend.balanceChange >= 0 ? "success" : "error"}
-                    sx={{ height: 20, fontSize: "0.6875rem" }}
-                  />
-                </Box>
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 700, color: isPositive ? COLORS.primary : COLORS.tertiary, letterSpacing: "-0.03em" }}
+                >
+                  {fmt(friend.balance)}
+                </Typography>
                 <Typography
                   variant="caption"
                   sx={{ color: COLORS.primary, textTransform: "none", letterSpacing: 0, display: "flex", alignItems: "center", gap: 0.5, mt: 0.75 }}
@@ -673,19 +675,6 @@ export default function FriendStatement() {
                 >
                   Delete
                 </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<NotificationsRoundedIcon />}
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: `${COLORS.outlineVariant}66`,
-                    color: COLORS.onSurface,
-                    fontWeight: 500,
-                    "&:hover": { borderColor: COLORS.outline, bgcolor: COLORS.surfaceContainerLow },
-                  }}
-                >
-                  Remind
-                </Button>
                 <Button variant="contained" startIcon={<CheckCircleRoundedIcon />} sx={{ borderRadius: 2 }}>
                   Settle Up
                 </Button>
@@ -699,12 +688,21 @@ export default function FriendStatement() {
               Recent Transactions
             </Typography>
             <SectionCard>
-              {friend.transactions.map((tx: Transaction, i: number) => (
-                <Box key={tx.id}>
-                  <TransactionRow tx={tx} />
-                  {i < friend.transactions.length - 1 && <Divider />}
-                </Box>
-              ))}
+              {friend.transactions.length === 0 ? (
+                <Typography
+                  variant="body2"
+                  sx={{ color: COLORS.onSurfaceVariant, textAlign: "center", py: 3 }}
+                >
+                  No transactions with {friend.name} yet.
+                </Typography>
+              ) : (
+                friend.transactions.map((tx: Transaction, i: number) => (
+                  <Box key={tx.id}>
+                    <TransactionRow tx={tx} />
+                    {i < friend.transactions.length - 1 && <Divider />}
+                  </Box>
+                ))
+              )}
             </SectionCard>
           </Box>
 
