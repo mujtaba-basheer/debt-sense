@@ -18,10 +18,13 @@
     "@fontsource/manrope": "^5.1.1",
     "@mui/icons-material": "^7.0.1",
     "@mui/material": "^7.0.1",
+    "@netlify/functions": "^5.2.0",
     "@netlify/neon": "^0.1.0",
+    "formik": "^2.4.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.5.0"
+    "react-router-dom": "^7.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/react": "^19.1.1",

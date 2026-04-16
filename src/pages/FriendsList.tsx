@@ -22,6 +22,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import { COLORS } from "@/theme";
 import { fmt } from "@/utils";
+import AddFriendModal from "@/components/AddFriendModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -316,6 +317,7 @@ export default function FriendsList() {
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("balance");
+  const [addFriendOpen, setAddFriendOpen] = useState(false);
 
   const theyOweYou = FRIENDS.filter((f) => f.balance > 0).reduce(
     (sum, f) => sum + f.balance,
@@ -367,6 +369,7 @@ export default function FriendsList() {
           <Button
             variant="contained"
             startIcon={<PersonAddRoundedIcon />}
+            onClick={() => setAddFriendOpen(true)}
             sx={{ borderRadius: 2, px: 2.5 }}
           >
             Add Friend
@@ -393,6 +396,7 @@ export default function FriendsList() {
             variant="contained"
             fullWidth
             startIcon={<PersonAddRoundedIcon />}
+            onClick={() => setAddFriendOpen(true)}
             sx={{ py: 1.75, borderRadius: 2, fontWeight: 700 }}
           >
             Invite Friend
@@ -634,6 +638,8 @@ export default function FriendsList() {
           ))
         )}
       </Box>
+
+      <AddFriendModal open={addFriendOpen} onClose={() => setAddFriendOpen(false)} />
     </Box>
   );
 }
