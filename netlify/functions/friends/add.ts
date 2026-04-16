@@ -1,6 +1,10 @@
-import type { Context } from "@netlify/functions";
+import type { Config, Context } from "@netlify/functions";
 import { sql } from "../db";
 import { addFriendSchema } from "../../../src/logic/friend";
+
+export const config: Config = {
+  path: "/api/friends/add",
+};
 
 export default async function handler(req: Request, _ctx: Context) {
   if (req.method !== "POST") {
