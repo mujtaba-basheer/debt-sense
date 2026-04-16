@@ -1,4 +1,4 @@
-import { sql } from "../../db";
+import { sql } from "../db";
 
 export async function handleGetSummaryByFriend(friendId: string) {
   const rows = await sql`

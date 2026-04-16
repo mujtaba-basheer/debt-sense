@@ -1,5 +1,5 @@
-import { sql } from "../../db";
-import type { Transaction } from "../../../../src/types/transaction";
+import { sql } from "../db";
+import type { Transaction } from "../../../src/types/transaction";
 
 export async function handleGetByFriend(friendId: string) {
   const rows = await sql`
