@@ -7,6 +7,8 @@ import {
   Button,
   LinearProgress,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
@@ -148,19 +150,12 @@ const TRUST_COLORS: Record<FriendData["trustLevel"], string> = {
   New: COLORS.onSurfaceVariant,
 };
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// ─── Shared sub-components ─────────────────────────────────────────────────────
 
 function TransactionRow({ tx }: { tx: Transaction }) {
   const isPositive = tx.yourShare > 0;
   return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        py: 2,
-      }}
-    >
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 2 }}>
       <Box
         sx={{
           width: 40,
@@ -176,27 +171,18 @@ function TransactionRow({ tx }: { tx: Transaction }) {
       >
         {CATEGORY_ICONS[tx.category]}
       </Box>
-
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="body2"
-          sx={{ fontWeight: 600, color: COLORS.onSurface }}
-          noWrap
-        >
+        <Typography variant="body2" sx={{ fontWeight: 600, color: COLORS.onSurface }} noWrap>
           {tx.description}
         </Typography>
         <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}>
           {tx.date} · Total {fmt(tx.total)}
         </Typography>
       </Box>
-
       <Box sx={{ textAlign: "right", flexShrink: 0 }}>
         <Typography
           variant="body2"
-          sx={{
-            fontWeight: 700,
-            color: isPositive ? COLORS.primary : COLORS.tertiary,
-          }}
+          sx={{ fontWeight: 700, color: isPositive ? COLORS.primary : COLORS.tertiary }}
         >
           {isPositive ? "+" : "-"}{fmt(tx.yourShare)}
         </Typography>
@@ -208,7 +194,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
   );
 }
 
-function SectionCard({ children }: { children: React.ReactNode }) {
+function SectionCard({ children, sx = {} }: { children: React.ReactNode; sx?: object }) {
   return (
     <Box
       sx={{
@@ -217,10 +203,78 @@ function SectionCard({ children }: { children: React.ReactNode }) {
         px: 3,
         py: 2.5,
         boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
+        ...sx,
       }}
     >
       {children}
     </Box>
+  );
+}
+
+function ExpenseBreakdown({ friend }: { friend: FriendData }) {
+  return (
+    <>
+      {friend.categoryBreakdown.map((cat) => (
+        <Box key={cat.label} sx={{ mb: 2.5, "&:last-child": { mb: 0 } }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, color: COLORS.onSurface }}>
+              {cat.label}
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+              {cat.pct}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={cat.pct}
+            sx={{
+              height: 6,
+              borderRadius: 99,
+              bgcolor: COLORS.surfaceContainerHighest,
+              "& .MuiLinearProgress-bar": { borderRadius: 99, bgcolor: cat.color },
+            }}
+          />
+        </Box>
+      ))}
+    </>
+  );
+}
+
+function SharedCommitmentCard({ g }: { g: SharedGroup }) {
+  return (
+    <SectionCard>
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            bgcolor: COLORS.surfaceContainerLow,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: COLORS.primary,
+            flexShrink: 0,
+          }}
+        >
+          <GroupsRoundedIcon fontSize="small" />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: COLORS.onSurface }}>
+            {g.name}
+          </Typography>
+          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}>
+            {g.members} members{g.dueDate ? ` · Due ${g.dueDate}` : ""}
+          </Typography>
+        </Box>
+        <Typography
+          variant="body2"
+          sx={{ fontWeight: 700, color: g.yourShare >= 0 ? COLORS.primary : COLORS.tertiary, flexShrink: 0 }}
+        >
+          {g.yourShare >= 0 ? "+" : "-"}{fmt(g.yourShare)}
+        </Typography>
+      </Box>
+    </SectionCard>
   );
 }
 
@@ -229,13 +283,21 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 export default function FriendStatement() {
   const { friendId } = useParams<{ friendId: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const friend = (friendId ? FRIENDS_DATA[friendId] : undefined) ?? DEFAULT_FRIEND;
   const isPositive = friend.balance >= 0;
 
+  // Format balance as split int + decimal for mobile large display
+  const absBalance = Math.abs(friend.balance);
+  const [balInt, balDec] = absBalance.toFixed(2).split(".");
+  const balanceIntFormatted = Number(balInt).toLocaleString("en-US");
+
   return (
-    <Box sx={{ maxWidth: 720 }}>
-      {/* Back */}
+    <Box sx={{ maxWidth: { xs: "100%", md: 720 } }}>
+
+      {/* Back button */}
       <Button
         startIcon={<ArrowBackRoundedIcon />}
         onClick={() => navigate("/friends")}
@@ -251,86 +313,149 @@ export default function FriendStatement() {
         Friends
       </Button>
 
-      {/* Hero card */}
-      <SectionCard>
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2.5, mb: 3 }}>
-          <Avatar
-            sx={{
-              width: 60,
-              height: 60,
-              bgcolor: friend.avatarColor,
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: "1.1rem",
-              flexShrink: 0,
-            }}
-          >
-            {friend.initials}
-          </Avatar>
-
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.02em" }}
-              >
-                {friend.name}
-              </Typography>
-              <Chip
-                icon={
-                  <WorkspacePremiumRoundedIcon
-                    sx={{ fontSize: "14px !important", color: `${TRUST_COLORS[friend.trustLevel]} !important` }}
-                  />
-                }
-                label={friend.trustLevel}
-                size="small"
+      {isMobile ? (
+        /* ══════════════════════════════════════════
+           MOBILE — single column
+        ══════════════════════════════════════════ */
+        <>
+          {/* Centered profile (no card bg) */}
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 4 }}>
+            <Box sx={{ position: "relative", mb: 2 }}>
+              <Avatar
                 sx={{
-                  bgcolor: `${TRUST_COLORS[friend.trustLevel]}18`,
-                  color: TRUST_COLORS[friend.trustLevel],
-                  fontWeight: 600,
-                  height: 22,
-                  fontSize: "0.6875rem",
+                  width: 88,
+                  height: 88,
+                  borderRadius: "20px",
+                  bgcolor: friend.avatarColor,
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: "1.5rem",
+                  boxShadow: "0 8px 24px rgba(22,29,25,0.10)",
                 }}
-              />
+              >
+                {friend.initials}
+              </Avatar>
+              {/* Trust badge */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: -8,
+                  right: -8,
+                  bgcolor: COLORS.primaryContainer,
+                  color: "#fff",
+                  borderRadius: "6px",
+                  p: 0.75,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <WorkspacePremiumRoundedIcon sx={{ fontSize: 14 }} />
+              </Box>
             </Box>
-            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
-              {friend.group}
+
+            <Typography
+              sx={{
+                fontWeight: 800,
+                fontSize: "1.375rem",
+                letterSpacing: "-0.025em",
+                color: COLORS.onSurface,
+                mb: 0.5,
+                textAlign: "center",
+              }}
+            >
+              {friend.name}
             </Typography>
             <Typography
-              variant="caption"
-              sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0, display: "block", mt: 0.5 }}
+              sx={{
+                fontSize: "0.6875rem",
+                fontWeight: 600,
+                color: COLORS.secondary,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                textAlign: "center",
+              }}
             >
-              Top Friend since {friend.friendSince} · {friend.totalTransactions} transactions
+              Active since {friend.friendSince}
             </Typography>
           </Box>
-        </Box>
 
-        <Divider sx={{ mb: 3 }} />
+          {/* Balance card */}
+          <Box
+            sx={{
+              bgcolor: COLORS.surfaceContainerLowest,
+              borderRadius: "24px",
+              p: 3.5,
+              mb: 3,
+              boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {/* Decorative blur blob */}
+            <Box
+              sx={{
+                position: "absolute",
+                top: -40,
+                right: -40,
+                width: 120,
+                height: 120,
+                borderRadius: "50%",
+                bgcolor: `${COLORS.primaryContainer}0d`,
+                filter: "blur(40px)",
+                pointerEvents: "none",
+              }}
+            />
 
-        {/* Balance */}
-        <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <Box>
-            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: "block", mb: 0.5 }}>
-              {isPositive ? "They owe you" : "You owe them"}
+            <Typography
+              sx={{
+                fontSize: "0.6875rem",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                color: COLORS.outline,
+                display: "block",
+                mb: 1,
+              }}
+            >
+              {isPositive ? "You are owed" : "You owe"}
             </Typography>
-            <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+
+            {/* Large split amount */}
+            <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.25, mb: 1.5 }}>
               <Typography
-                variant="h3"
                 sx={{
+                  fontSize: "1.5rem",
                   fontWeight: 700,
                   color: isPositive ? COLORS.primary : COLORS.tertiary,
-                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
                 }}
               >
-                {fmt(friend.balance)}
+                $
               </Typography>
-              <Chip
-                label={`${friend.balanceChange > 0 ? "+" : ""}${friend.balanceChange}% this month`}
-                size="small"
-                color={friend.balanceChange >= 0 ? "success" : "error"}
-                sx={{ height: 20, fontSize: "0.6875rem" }}
-              />
+              <Typography
+                sx={{
+                  fontSize: "3.25rem",
+                  fontWeight: 800,
+                  letterSpacing: "-0.04em",
+                  color: COLORS.onSurface,
+                  lineHeight: 1,
+                }}
+              >
+                {balanceIntFormatted}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: COLORS.outline,
+                  lineHeight: 1,
+                }}
+              >
+                .{balDec}
+              </Typography>
             </Box>
+
             <Typography
               variant="caption"
               sx={{
@@ -340,155 +465,222 @@ export default function FriendStatement() {
                 display: "flex",
                 alignItems: "center",
                 gap: 0.5,
-                mt: 0.75,
+                mb: 3,
               }}
             >
               <WorkspacePremiumRoundedIcon sx={{ fontSize: 13 }} />
               {friend.trustStreak}
             </Typography>
-          </Box>
 
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            <Button
-              variant="outlined"
-              startIcon={<NotificationsRoundedIcon />}
-              sx={{
-                borderRadius: 2,
-                borderColor: `${COLORS.outlineVariant}66`,
-                color: COLORS.onSurface,
-                fontWeight: 500,
-                "&:hover": { borderColor: COLORS.outline, bgcolor: COLORS.surfaceContainerLow },
-              }}
-            >
-              Remind
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<CheckCircleRoundedIcon />}
-              sx={{ borderRadius: 2 }}
-            >
-              Settle Up
-            </Button>
-          </Box>
-        </Box>
-      </SectionCard>
-
-      {/* Recent transactions */}
-      <Box sx={{ mt: 3 }}>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}
-        >
-          Recent Transactions
-        </Typography>
-        <SectionCard>
-          {friend.transactions.map((tx, i) => (
-            <Box key={tx.id}>
-              <TransactionRow tx={tx} />
-              {i < friend.transactions.length - 1 && <Divider />}
+            {/* Side-by-side action buttons */}
+            <Box sx={{ display: "flex", gap: 1.5 }}>
+              <Button
+                variant="contained"
+                startIcon={<CheckCircleRoundedIcon />}
+                sx={{ flex: 1, py: 1.75, borderRadius: 2, fontWeight: 700 }}
+              >
+                Settle Up
+              </Button>
+              <Button
+                startIcon={<NotificationsRoundedIcon />}
+                sx={{
+                  flex: 1,
+                  py: 1.75,
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  bgcolor: COLORS.surfaceContainerHigh,
+                  color: COLORS.onSecondaryContainer,
+                  "&:hover": { bgcolor: COLORS.surfaceContainerHighest },
+                }}
+              >
+                Reminder
+              </Button>
             </Box>
-          ))}
-        </SectionCard>
-      </Box>
-
-      {/* Bottom row: breakdown + shared groups */}
-      <Box sx={{ display: "flex", gap: 3, mt: 3 }}>
-        {/* Expense breakdown */}
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}
-          >
-            Expense Breakdown
-          </Typography>
-          <SectionCard>
-            {friend.categoryBreakdown.map((cat) => (
-              <Box key={cat.label} sx={{ mb: 2.5, "&:last-child": { mb: 0 } }}>
-                <Box
-                  sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 500, color: COLORS.onSurface }}>
-                    {cat.label}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant }}>
-                    {cat.pct}%
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={cat.pct}
-                  sx={{
-                    height: 6,
-                    borderRadius: 99,
-                    bgcolor: COLORS.surfaceContainerHighest,
-                    "& .MuiLinearProgress-bar": {
-                      borderRadius: 99,
-                      bgcolor: cat.color,
-                    },
-                  }}
-                />
-              </Box>
-            ))}
-          </SectionCard>
-        </Box>
-
-        {/* Shared commitments */}
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}
-          >
-            Shared Commitments
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {friend.sharedGroups.map((g) => (
-              <SectionCard key={g.name}>
-                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 2,
-                      bgcolor: COLORS.surfaceContainerLow,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: COLORS.primary,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <GroupsRoundedIcon fontSize="small" />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 600, color: COLORS.onSurface }}
-                    >
-                      {g.name}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-                    >
-                      {g.members} members{g.dueDate ? ` · Due ${g.dueDate}` : ""}
-                    </Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 700,
-                      color: g.yourShare >= 0 ? COLORS.primary : COLORS.tertiary,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {g.yourShare >= 0 ? "+" : "-"}{fmt(g.yourShare)}
-                  </Typography>
-                </Box>
-              </SectionCard>
-            ))}
           </Box>
-        </Box>
-      </Box>
+
+          {/* Recent Transactions */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}>
+              Recent Transactions
+            </Typography>
+            <SectionCard>
+              {friend.transactions.map((tx, i) => (
+                <Box key={tx.id}>
+                  <TransactionRow tx={tx} />
+                  {i < friend.transactions.length - 1 && <Divider />}
+                </Box>
+              ))}
+            </SectionCard>
+          </Box>
+
+          {/* Expense Breakdown — full width */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}>
+              Expense Breakdown
+            </Typography>
+            <SectionCard>
+              <ExpenseBreakdown friend={friend} />
+            </SectionCard>
+          </Box>
+
+          {/* Shared Commitments — full width */}
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}>
+              Shared Commitments
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {friend.sharedGroups.map((g) => (
+                <SharedCommitmentCard key={g.name} g={g} />
+              ))}
+            </Box>
+          </Box>
+        </>
+      ) : (
+        /* ══════════════════════════════════════════
+           DESKTOP — unchanged layout
+        ══════════════════════════════════════════ */
+        <>
+          {/* Hero card */}
+          <SectionCard>
+            <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2.5, mb: 3 }}>
+              <Avatar
+                sx={{
+                  width: 60,
+                  height: 60,
+                  bgcolor: friend.avatarColor,
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: "1.1rem",
+                  flexShrink: 0,
+                }}
+              >
+                {friend.initials}
+              </Avatar>
+
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.02em" }}>
+                    {friend.name}
+                  </Typography>
+                  <Chip
+                    icon={
+                      <WorkspacePremiumRoundedIcon
+                        sx={{ fontSize: "14px !important", color: `${TRUST_COLORS[friend.trustLevel]} !important` }}
+                      />
+                    }
+                    label={friend.trustLevel}
+                    size="small"
+                    sx={{
+                      bgcolor: `${TRUST_COLORS[friend.trustLevel]}18`,
+                      color: TRUST_COLORS[friend.trustLevel],
+                      fontWeight: 600,
+                      height: 22,
+                      fontSize: "0.6875rem",
+                    }}
+                  />
+                </Box>
+                <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
+                  {friend.group}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0, display: "block", mt: 0.5 }}
+                >
+                  Top Friend since {friend.friendSince} · {friend.totalTransactions} transactions
+                </Typography>
+              </Box>
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: "block", mb: 0.5 }}>
+                  {isPositive ? "They owe you" : "You owe them"}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                  <Typography
+                    variant="h3"
+                    sx={{ fontWeight: 700, color: isPositive ? COLORS.primary : COLORS.tertiary, letterSpacing: "-0.03em" }}
+                  >
+                    {fmt(friend.balance)}
+                  </Typography>
+                  <Chip
+                    label={`${friend.balanceChange > 0 ? "+" : ""}${friend.balanceChange}% this month`}
+                    size="small"
+                    color={friend.balanceChange >= 0 ? "success" : "error"}
+                    sx={{ height: 20, fontSize: "0.6875rem" }}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: COLORS.primary, textTransform: "none", letterSpacing: 0, display: "flex", alignItems: "center", gap: 0.5, mt: 0.75 }}
+                >
+                  <WorkspacePremiumRoundedIcon sx={{ fontSize: 13 }} />
+                  {friend.trustStreak}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", gap: 1.5 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<NotificationsRoundedIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: `${COLORS.outlineVariant}66`,
+                    color: COLORS.onSurface,
+                    fontWeight: 500,
+                    "&:hover": { borderColor: COLORS.outline, bgcolor: COLORS.surfaceContainerLow },
+                  }}
+                >
+                  Remind
+                </Button>
+                <Button variant="contained" startIcon={<CheckCircleRoundedIcon />} sx={{ borderRadius: 2 }}>
+                  Settle Up
+                </Button>
+              </Box>
+            </Box>
+          </SectionCard>
+
+          {/* Recent transactions */}
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}>
+              Recent Transactions
+            </Typography>
+            <SectionCard>
+              {friend.transactions.map((tx, i) => (
+                <Box key={tx.id}>
+                  <TransactionRow tx={tx} />
+                  {i < friend.transactions.length - 1 && <Divider />}
+                </Box>
+              ))}
+            </SectionCard>
+          </Box>
+
+          {/* Bottom row: breakdown + shared groups */}
+          <Box sx={{ display: "flex", gap: 3, mt: 3 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}>
+                Expense Breakdown
+              </Typography>
+              <SectionCard>
+                <ExpenseBreakdown friend={friend} />
+              </SectionCard>
+            </Box>
+
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 2, letterSpacing: "-0.01em" }}>
+                Shared Commitments
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {friend.sharedGroups.map((g) => (
+                  <SharedCommitmentCard key={g.name} g={g} />
+                ))}
+              </Box>
+            </Box>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

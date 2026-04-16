@@ -7,6 +7,8 @@ import {
   Chip,
   Divider,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
@@ -14,6 +16,11 @@ import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
 import LightbulbRoundedIcon from "@mui/icons-material/LightbulbRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
+import InsightsRoundedIcon from "@mui/icons-material/InsightsRounded";
+import CallMadeRoundedIcon from "@mui/icons-material/CallMadeRounded";
+import CallReceivedRoundedIcon from "@mui/icons-material/CallReceivedRounded";
 import { COLORS } from "@/theme";
 import { fmt, fmtShort, CATEGORY_ICONS } from "@/utils";
 
@@ -95,7 +102,14 @@ const SPENDING_BREAKDOWN = [
   { label: "Shopping", pct: 12, color: COLORS.surfaceContainerHighest },
 ];
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { label: "Add Debt", Icon: AddRoundedIcon, to: "/transactions/add" },
+  { label: "Settle", Icon: SendRoundedIcon, to: "/friends" },
+  { label: "Remind", Icon: NotificationsRoundedIcon, to: "/friends" },
+  { label: "Insights", Icon: InsightsRoundedIcon, to: "/activity" },
+];
+
+// ─── Shared sub-components ─────────────────────────────────────────────────────
 
 function Card({ children, sx = {} }: { children: React.ReactNode; sx?: object }) {
   return (
@@ -118,234 +132,421 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       variant="h6"
-      sx={{
-        fontWeight: 700,
-        color: COLORS.onSurface,
-        letterSpacing: "-0.01em",
-        mb: 2,
-      }}
+      sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.01em", mb: 2 }}
     >
       {children}
     </Typography>
   );
 }
 
+function ActivityRow({ item, showDivider }: { item: typeof RECENT_ACTIVITY[0]; showDivider: boolean }) {
+  return (
+    <Box>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 1.75 }}>
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: 2,
+            bgcolor: COLORS.surfaceContainerLow,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: COLORS.onSurfaceVariant,
+            flexShrink: 0,
+          }}
+        >
+          {CATEGORY_ICONS[item.category]}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, color: COLORS.onSurface }}
+            noWrap
+          >
+            {item.description}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
+          >
+            with {item.friend} · {item.date}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}>
+            {item.positive ? (
+              <TrendingUpRoundedIcon sx={{ fontSize: 14, color: COLORS.primary }} />
+            ) : (
+              <TrendingDownRoundedIcon sx={{ fontSize: 14, color: COLORS.tertiary }} />
+            )}
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 700, color: item.positive ? COLORS.primary : COLORS.tertiary }}
+            >
+              {item.positive ? "+" : "-"}{fmt(item.amount)}
+            </Typography>
+          </Box>
+          <Typography
+            variant="caption"
+            sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
+          >
+            your share
+          </Typography>
+        </Box>
+      </Box>
+      {showDivider && <Divider />}
+    </Box>
+  );
+}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 
+  // Split balance into integer and decimal for mobile big-number display
+  const [balanceInt, balanceDec] = STATS.netBalance.toFixed(2).split(".");
+  const balanceIntFormatted = Number(balanceInt).toLocaleString("en-US");
+
   return (
-    <Box sx={{ maxWidth: 1100 }}>
-      {/* ── Header ── */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-          >
-            {today}
-          </Typography>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.02em", mt: 0.25 }}
-          >
-            Good morning, Mujtaba
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddRoundedIcon />}
-          onClick={() => navigate("/transactions/add")}
-          sx={{ borderRadius: 2, px: 2.5, mt: 0.5 }}
-        >
-          Add Transaction
-        </Button>
-      </Box>
+    <Box sx={{ maxWidth: { xs: "100%", md: 1100 } }}>
 
-      {/* ── Hero balance card (glassmorphic / gradient) ── */}
-      <Box
-        sx={{
-          borderRadius: 4,
-          background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryContainer} 100%)`,
-          px: 4,
-          py: 3.5,
-          mb: 3,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-          overflow: "hidden",
-          boxShadow: "0 20px 60px -5px rgba(0, 108, 73, 0.3)",
-        }}
-      >
-        {/* Decorative circle */}
-        <Box
-          sx={{
-            position: "absolute",
-            width: 320,
-            height: 320,
-            borderRadius: "50%",
-            bgcolor: "rgba(255,255,255,0.06)",
-            right: -80,
-            top: -100,
-            pointerEvents: "none",
-          }}
-        />
-        <Box
-          sx={{
-            position: "absolute",
-            width: 200,
-            height: 200,
-            borderRadius: "50%",
-            bgcolor: "rgba(255,255,255,0.04)",
-            right: 120,
-            bottom: -80,
-            pointerEvents: "none",
-          }}
-        />
+      {/* ══════════════════════════════════════════
+          DESKTOP ONLY — header + hero card
+      ══════════════════════════════════════════ */}
 
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "rgba(255,255,255,0.75)",
-              textTransform: "none",
-              letterSpacing: 0,
-              display: "block",
-              mb: 0.5,
-            }}
-          >
-            Net Balance
-          </Typography>
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 700,
-              color: "#fff",
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-              mb: 1,
-            }}
-          >
-            {fmt(STATS.netBalance)}
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <TrendingUpRoundedIcon sx={{ fontSize: 16, color: COLORS.primaryFixedDim }} />
-            <Typography
-              variant="body2"
-              sx={{ color: COLORS.primaryFixedDim, fontWeight: 600 }}
-            >
-              +{STATS.netChange}% from last month
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ display: "flex", gap: 4, position: "relative" }}>
-          <Box sx={{ textAlign: "center" }}>
-            <Typography
-              variant="caption"
-              sx={{ color: "rgba(255,255,255,0.65)", textTransform: "none", letterSpacing: 0 }}
-            >
-              They owe you
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}
-            >
-              {fmtShort(STATS.theyOweYou)}
-            </Typography>
-          </Box>
+      {!isMobile && (
+        <>
+          {/* Desktop header */}
           <Box
             sx={{
-              width: 1,
-              bgcolor: "rgba(255,255,255,0.2)",
-              borderRadius: 99,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              mb: 4,
             }}
-          />
-          <Box sx={{ textAlign: "center" }}>
-            <Typography
-              variant="caption"
-              sx={{ color: "rgba(255,255,255,0.65)", textTransform: "none", letterSpacing: 0 }}
-            >
-              You owe them
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}
-            >
-              {fmtShort(STATS.youOweThem)}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              width: 1,
-              bgcolor: "rgba(255,255,255,0.2)",
-              borderRadius: 99,
-            }}
-          />
-          <Box sx={{ textAlign: "center" }}>
-            <Typography
-              variant="caption"
-              sx={{ color: "rgba(255,255,255,0.65)", textTransform: "none", letterSpacing: 0 }}
-            >
-              Pending
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}
-            >
-              {STATS.pendingSettlements}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* ── Asymmetric 2-col layout ── */}
-      <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
-        {/* Left column (wide) */}
-        <Box sx={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-          {/* Recent activity */}
-          <Card>
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}
-            >
-              <SectionTitle>Recent Activity</SectionTitle>
-              <Button
-                endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
-                sx={{
-                  color: COLORS.primary,
-                  fontWeight: 600,
-                  fontSize: "0.8125rem",
-                  p: 0,
-                  "&:hover": { bgcolor: "transparent" },
-                }}
-                disableRipple
+          >
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
               >
-                View all
-              </Button>
+                {today}
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.02em", mt: 0.25 }}
+              >
+                Good morning, Mujtaba
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => navigate("/transactions/add")}
+              sx={{ borderRadius: 2, px: 2.5, mt: 0.5 }}
+            >
+              Add Transaction
+            </Button>
+          </Box>
+
+          {/* Desktop hero gradient card */}
+          <Box
+            sx={{
+              borderRadius: 4,
+              background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryContainer} 100%)`,
+              px: 4,
+              py: 3.5,
+              mb: 3,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: "0 20px 60px -5px rgba(0, 108, 73, 0.3)",
+            }}
+          >
+            <Box sx={{ position: "absolute", width: 320, height: 320, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.06)", right: -80, top: -100, pointerEvents: "none" }} />
+            <Box sx={{ position: "absolute", width: 200, height: 200, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.04)", right: 120, bottom: -80, pointerEvents: "none" }} />
+
+            <Box>
+              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.75)", textTransform: "none", letterSpacing: 0, display: "block", mb: 0.5 }}>
+                Net Balance
+              </Typography>
+              <Typography variant="h3" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1, mb: 1 }}>
+                {fmt(STATS.netBalance)}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <TrendingUpRoundedIcon sx={{ fontSize: 16, color: COLORS.primaryFixedDim }} />
+                <Typography variant="body2" sx={{ color: COLORS.primaryFixedDim, fontWeight: 600 }}>
+                  +{STATS.netChange}% from last month
+                </Typography>
+              </Box>
             </Box>
 
-            {RECENT_ACTIVITY.map((item, i) => (
-              <Box key={item.id}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 1.75 }}>
+            <Box sx={{ display: "flex", gap: 4, position: "relative", flexShrink: 0 }}>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)", textTransform: "none", letterSpacing: 0, whiteSpace: "nowrap", display: "block" }}>
+                  They owe you
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
+                  {fmtShort(STATS.theyOweYou)}
+                </Typography>
+              </Box>
+              <Box sx={{ width: 1, bgcolor: "rgba(255,255,255,0.2)", borderRadius: 99 }} />
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)", textTransform: "none", letterSpacing: 0, whiteSpace: "nowrap", display: "block" }}>
+                  You owe them
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
+                  {fmtShort(STATS.youOweThem)}
+                </Typography>
+              </Box>
+              <Box sx={{ width: 1, bgcolor: "rgba(255,255,255,0.2)", borderRadius: 99 }} />
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)", textTransform: "none", letterSpacing: 0, whiteSpace: "nowrap", display: "block" }}>
+                  Pending
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
+                  {STATS.pendingSettlements}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════
+          MOBILE ONLY — flat hero + bento + actions
+      ══════════════════════════════════════════ */}
+
+      {isMobile && (
+        <>
+          {/* Mobile hero — flat, big number */}
+          <Box sx={{ mb: 4, mt: 1 }}>
+            <Typography
+              sx={{
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: COLORS.outline,
+                mb: 0.5,
+              }}
+            >
+              Total Balance
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.25, mb: 2 }}>
+              <Typography sx={{ fontSize: "2rem", fontWeight: 800, color: COLORS.onSurface, lineHeight: 1 }}>
+                $
+              </Typography>
+              <Typography sx={{ fontSize: "2.75rem", fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.onSurface, lineHeight: 1 }}>
+                {balanceIntFormatted}
+              </Typography>
+              <Typography sx={{ fontSize: "1.375rem", fontWeight: 700, color: COLORS.outline, lineHeight: 1 }}>
+                .{balanceDec}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.75,
+                px: 1.5,
+                py: 0.5,
+                bgcolor: `${COLORS.primaryContainer}1a`,
+                borderRadius: 99,
+              }}
+            >
+              <TrendingUpRoundedIcon sx={{ fontSize: 16, color: COLORS.primaryContainer }} />
+              <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.onPrimaryContainer }}>
+                +{STATS.netChange}% from last month
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Mobile bento — owed vs you owe */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 4 }}>
+            {/* Owed to You — green */}
+            <Box
+              sx={{
+                bgcolor: COLORS.primaryContainer,
+                borderRadius: 2,
+                p: 2.5,
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              <CallMadeRoundedIcon
+                sx={{
+                  position: "absolute",
+                  right: -12,
+                  top: -12,
+                  fontSize: 88,
+                  color: "rgba(255,255,255,0.10)",
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "0.625rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "rgba(255,255,255,0.80)",
+                  mb: 2,
+                  display: "block",
+                }}
+              >
+                Owed to you
+              </Typography>
+              <Typography sx={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+                {fmtShort(STATS.theyOweYou)}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.90)", mt: 0.5 }}>
+                {TOP_DEBTORS.length} people owe you
+              </Typography>
+            </Box>
+
+            {/* You Owe — light */}
+            <Box
+              sx={{
+                bgcolor: COLORS.surfaceContainerLow,
+                borderRadius: 2,
+                p: 2.5,
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              <CallReceivedRoundedIcon
+                sx={{
+                  position: "absolute",
+                  right: -12,
+                  top: -12,
+                  fontSize: 88,
+                  color: `${COLORS.onSurface}08`,
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "0.625rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: COLORS.outline,
+                  mb: 2,
+                  display: "block",
+                }}
+              >
+                You owe
+              </Typography>
+              <Typography sx={{ fontSize: "1.5rem", fontWeight: 800, color: COLORS.onSurface, letterSpacing: "-0.02em" }}>
+                {fmtShort(STATS.youOweThem)}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: COLORS.onSurfaceVariant, mt: 0.5 }}>
+                {STATS.pendingSettlements} pending payments
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Quick action bar — horizontal scroll */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              mb: 4,
+              overflowX: "auto",
+              mx: -3,
+              px: 3,
+              pb: 0.5,
+              "&::-webkit-scrollbar": { display: "none" },
+              scrollbarWidth: "none",
+            }}
+          >
+            {QUICK_ACTIONS.map(({ label, Icon, to }) => (
+              <Box
+                key={label}
+                onClick={() => navigate(to)}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  flexShrink: 0,
+                  cursor: "pointer",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 2,
+                    bgcolor: COLORS.surfaceContainerHighest,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "background-color 0.15s ease",
+                    "&:hover": { bgcolor: COLORS.primaryContainer, "& svg": { color: "#fff !important" } },
+                  }}
+                >
+                  <Icon sx={{ color: COLORS.primaryContainer, fontSize: 24 }} />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: "0.625rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: COLORS.onSurfaceVariant,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════
+          DESKTOP 2-col  /  MOBILE single-col
+      ══════════════════════════════════════════ */}
+
+      {isMobile ? (
+        /* ── Mobile single-column content ── */
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {/* Recent Activity */}
+          <Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+              <Typography
+                sx={{ fontWeight: 800, fontSize: "1.125rem", letterSpacing: "-0.02em", color: COLORS.onSurface }}
+              >
+                Recent Activity
+              </Typography>
+              <Button
+                endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
+                sx={{ color: COLORS.primary, fontWeight: 700, fontSize: "0.875rem", p: 0, "&:hover": { bgcolor: "transparent" } }}
+                disableRipple
+              >
+                See All
+              </Button>
+            </Box>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {RECENT_ACTIVITY.slice(0, 4).map((item) => (
+                <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 2, cursor: "pointer" }}>
                   <Box
                     sx={{
-                      width: 40,
-                      height: 40,
+                      width: 48,
+                      height: 48,
                       borderRadius: 2,
                       bgcolor: COLORS.surfaceContainerLow,
                       display: "flex",
@@ -358,217 +559,209 @@ export default function Dashboard() {
                     {CATEGORY_ICONS[item.category]}
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 600, color: COLORS.onSurface }}
-                      noWrap
-                    >
+                    <Typography sx={{ fontWeight: 700, color: COLORS.onSurface, fontSize: "0.9375rem" }} noWrap>
                       {item.description}
                     </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-                    >
+                    <Typography sx={{ fontSize: "0.75rem", color: COLORS.outline }}>
                       with {item.friend} · {item.date}
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: "right", flexShrink: 0 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}>
-                      {item.positive ? (
-                        <TrendingUpRoundedIcon sx={{ fontSize: 14, color: COLORS.primary }} />
-                      ) : (
-                        <TrendingDownRoundedIcon sx={{ fontSize: 14, color: COLORS.tertiary }} />
-                      )}
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 700,
-                          color: item.positive ? COLORS.primary : COLORS.tertiary,
-                        }}
-                      >
-                        {item.positive ? "+" : "-"}{fmt(item.amount)}
+                    <Typography
+                      sx={{ fontWeight: 800, color: item.positive ? COLORS.primaryContainer : COLORS.onSurface }}
+                    >
+                      {item.positive ? "+" : "-"}{fmt(item.amount)}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.625rem", textTransform: "uppercase", fontWeight: 700, color: COLORS.outline }}>
+                      {item.date}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      ) : (
+        /* ── Desktop 2-column layout ── */
+        <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+          {/* Left column (wide) */}
+          <Box sx={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Recent Activity */}
+            <Card>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <SectionTitle>Recent Activity</SectionTitle>
+                <Button
+                  endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
+                  sx={{ color: COLORS.primary, fontWeight: 600, fontSize: "0.8125rem", p: 0, "&:hover": { bgcolor: "transparent" } }}
+                  disableRipple
+                >
+                  View all
+                </Button>
+              </Box>
+              {RECENT_ACTIVITY.map((item, i) => (
+                <ActivityRow key={item.id} item={item} showDivider={i < RECENT_ACTIVITY.length - 1} />
+              ))}
+            </Card>
+
+            {/* Monthly spending breakdown */}
+            <Card>
+              <SectionTitle>Monthly Spending Breakdown</SectionTitle>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                {SPENDING_BREAKDOWN.map((cat) => (
+                  <Box key={cat.label}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: COLORS.onSurface }}>
+                        {cat.label}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                        {cat.pct}%
                       </Typography>
                     </Box>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-                    >
-                      your share
-                    </Typography>
-                  </Box>
-                </Box>
-                {i < RECENT_ACTIVITY.length - 1 && <Divider />}
-              </Box>
-            ))}
-          </Card>
-
-          {/* Monthly spending breakdown */}
-          <Card>
-            <SectionTitle>Monthly Spending Breakdown</SectionTitle>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-              {SPENDING_BREAKDOWN.map((cat) => (
-                <Box key={cat.label}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 500, color: COLORS.onSurface }}
-                    >
-                      {cat.label}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant }}
-                    >
-                      {cat.pct}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={cat.pct}
-                    sx={{
-                      height: 6,
-                      borderRadius: 99,
-                      bgcolor: COLORS.surfaceContainerHighest,
-                      "& .MuiLinearProgress-bar": {
+                    <LinearProgress
+                      variant="determinate"
+                      value={cat.pct}
+                      sx={{
+                        height: 6,
                         borderRadius: 99,
-                        bgcolor: cat.color,
-                      },
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          </Card>
-        </Box>
-
-        {/* Right column (narrow) */}
-        <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-          {/* Top debtors */}
-          <Box>
-            <SectionTitle>Top Balances</SectionTitle>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {TOP_DEBTORS.map((d) => (
-                <Box
-                  key={d.id}
-                  onClick={() => navigate(`/friends/${d.id}`)}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    bgcolor: COLORS.surfaceContainerLowest,
-                    borderRadius: 3,
-                    px: 2,
-                    py: 1.5,
-                    cursor: "pointer",
-                    boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
-                    transition: "background-color 0.15s ease",
-                    "&:hover": { bgcolor: COLORS.surfaceContainer },
-                  }}
-                >
-                  <Avatar
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      bgcolor: d.avatarColor,
-                      color: "#fff",
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {d.initials}
-                  </Avatar>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 600, color: COLORS.onSurface }}
-                      noWrap
-                    >
-                      {d.name}
-                    </Typography>
-                    {d.daysOverdue > 0 && (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <AccessTimeRoundedIcon sx={{ fontSize: 11, color: COLORS.tertiary }} />
-                        <Typography
-                          variant="caption"
-                          sx={{ color: COLORS.tertiary, textTransform: "none", letterSpacing: 0 }}
-                        >
-                          {d.daysOverdue}d overdue
-                        </Typography>
-                      </Box>
-                    )}
+                        bgcolor: COLORS.surfaceContainerHighest,
+                        "& .MuiLinearProgress-bar": { borderRadius: 99, bgcolor: cat.color },
+                      }}
+                    />
                   </Box>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, color: COLORS.primary, flexShrink: 0 }}
-                  >
-                    +{fmtShort(d.amount)}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
+                ))}
+              </Box>
+            </Card>
           </Box>
 
-          {/* Smart tips */}
-          <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-              <LightbulbRoundedIcon sx={{ color: COLORS.primary, fontSize: 20 }} />
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.01em" }}
-              >
-                Smart Tips
+          {/* Right column (narrow) */}
+          <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Top balances */}
+            <Box>
+              <SectionTitle>Top Balances</SectionTitle>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {TOP_DEBTORS.map((d) => (
+                  <Box
+                    key={d.id}
+                    onClick={() => navigate(`/friends/${d.id}`)}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      bgcolor: COLORS.surfaceContainerLowest,
+                      borderRadius: 3,
+                      px: 2,
+                      py: 1.5,
+                      cursor: "pointer",
+                      boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
+                      transition: "background-color 0.15s ease",
+                      "&:hover": { bgcolor: COLORS.surfaceContainer },
+                    }}
+                  >
+                    <Avatar sx={{ width: 36, height: 36, bgcolor: d.avatarColor, color: "#fff", fontSize: "0.75rem", fontWeight: 700, flexShrink: 0 }}>
+                      {d.initials}
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: COLORS.onSurface }} noWrap>
+                        {d.name}
+                      </Typography>
+                      {d.daysOverdue > 0 && (
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <AccessTimeRoundedIcon sx={{ fontSize: 11, color: COLORS.tertiary }} />
+                          <Typography variant="caption" sx={{ color: COLORS.tertiary, textTransform: "none", letterSpacing: 0 }}>
+                            {d.daysOverdue}d overdue
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: COLORS.primary, flexShrink: 0 }}>
+                      +{fmtShort(d.amount)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Smart tips */}
+            <Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <LightbulbRoundedIcon sx={{ color: COLORS.primary, fontSize: 20 }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.01em" }}>
+                  Smart Tips
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {SMART_TIPS.map((tip, i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      bgcolor: COLORS.surfaceContainerLowest,
+                      borderRadius: 3,
+                      px: 2.5,
+                      py: 2,
+                      boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
+                      borderLeft: `3px solid ${COLORS.primaryContainer}`,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: COLORS.onSurface, lineHeight: 1.6 }}>
+                      {tip}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Pending settlements */}
+            <Card>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+                <SectionTitle>Pending Settlements</SectionTitle>
+                <Chip
+                  label={STATS.pendingSettlements}
+                  size="small"
+                  color="success"
+                  sx={{ height: 20, fontSize: "0.6875rem", mb: 2 }}
+                />
+              </Box>
+              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
+                You have {STATS.pendingSettlements} unsettled balances waiting for confirmation.
               </Typography>
-            </Box>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {SMART_TIPS.map((tip, i) => (
-                <Box
-                  key={i}
-                  sx={{
-                    bgcolor: COLORS.surfaceContainerLowest,
-                    borderRadius: 3,
-                    px: 2.5,
-                    py: 2,
-                    boxShadow: "0 12px 40px -5px rgba(22, 29, 25, 0.06)",
-                    borderLeft: `3px solid ${COLORS.primaryContainer}`,
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{ color: COLORS.onSurface, lineHeight: 1.6 }}
-                  >
-                    {tip}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
+              <Button
+                variant="contained"
+                fullWidth
+                sx={{ mt: 2, borderRadius: 2 }}
+                onClick={() => navigate("/friends")}
+              >
+                Review &amp; Settle
+              </Button>
+            </Card>
           </Box>
-
-          {/* Pending settlements */}
-          <Card>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
-              <SectionTitle>Pending Settlements</SectionTitle>
-              <Chip
-                label={STATS.pendingSettlements}
-                size="small"
-                color="success"
-                sx={{ height: 20, fontSize: "0.6875rem", mb: 2 }}
-              />
-            </Box>
-            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
-              You have {STATS.pendingSettlements} unsettled balances waiting for confirmation.
-            </Typography>
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{ mt: 2, borderRadius: 2 }}
-              onClick={() => navigate("/friends")}
-            >
-              Review &amp; Settle
-            </Button>
-          </Card>
         </Box>
-      </Box>
+      )}
+
+      {/* ── Mobile FAB ── */}
+      {isMobile && (
+        <Box
+          onClick={() => navigate("/transactions/add")}
+          sx={{
+            position: "fixed",
+            bottom: 96,
+            right: 24,
+            zIndex: 40,
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            bgcolor: COLORS.primaryContainer,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(0, 108, 73, 0.35)",
+            transition: "transform 0.15s ease",
+            "&:active": { transform: "scale(0.93)" },
+          }}
+        >
+          <AddRoundedIcon sx={{ color: "#fff", fontSize: 28 }} />
+        </Box>
+      )}
     </Box>
   );
 }
