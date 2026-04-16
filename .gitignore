@@ -39,3 +39,5 @@ Thumbs.db
 mcp.json
 
 node_modules/
+
+.scripts/

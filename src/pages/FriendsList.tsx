@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -23,6 +23,7 @@ import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import { COLORS } from "@/theme";
 import { fmt } from "@/utils";
 import AddFriendModal from "@/components/AddFriendModal";
+import type { Friend as ApiFriend } from "@/types/friend";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,76 +41,20 @@ interface Friend {
   avatarColor?: string;
 }
 
-// ─── Dummy data ───────────────────────────────────────────────────────────────
+// ─── API → local shape mapper ─────────────────────────────────────────────────
 
-const FRIENDS: Friend[] = [
-  {
-    id: "1",
-    name: "Julian Casablancas",
-    initials: "JC",
-    group: "NYC Creative Group",
-    balance: 3240,
-    status: "active",
-    avatarColor: "#006c49",
-  },
-  {
-    id: "2",
-    name: "Amelie Poulain",
-    initials: "AP",
-    group: "Travel & Events",
-    balance: -1150,
-    status: "overdue",
-    statusLabel: "Overdue 3 days",
-    avatarColor: "#a43a3a",
-  },
-  {
-    id: "3",
-    name: "Albert Hammond Jr.",
-    initials: "AH",
-    group: "Business Ventures",
+function toFriend(f: ApiFriend): Friend {
+  return {
+    id: f.id,
+    name: f.name,
+    initials: f.initials,
+    avatarColor: f.avatar_color,
+    // TODO: derive from transactions once that table exists
+    group: f.relation,
     balance: 0,
-    status: "settled",
-    avatarColor: "#376850",
-  },
-  {
-    id: "4",
-    name: "Elena Rodriguez",
-    initials: "ER",
-    group: "Design & Logistics Co-Op",
-    balance: 8500,
     status: "active",
-    connections: 4,
-    avatarColor: "#005236",
-  },
-  {
-    id: "5",
-    name: "Marko V.",
-    initials: "MV",
-    group: "Photography Studio",
-    balance: -420,
-    status: "settled",
-    statusLabel: "Settled 2 days late",
-    avatarColor: "#3c6c54",
-  },
-  {
-    id: "6",
-    name: "Sarah Jenkins",
-    initials: "SJ",
-    group: "Flatmates",
-    balance: 1200,
-    status: "active",
-    avatarColor: "#006c49",
-  },
-  {
-    id: "7",
-    name: "Alex Rivera",
-    initials: "AR",
-    group: "Work Team",
-    balance: 450,
-    status: "active",
-    avatarColor: "#376850",
-  },
-];
+  };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,8 +82,8 @@ function SummaryCard({
     positive === undefined
       ? COLORS.onSurface
       : positive
-      ? COLORS.primary
-      : COLORS.tertiary;
+        ? COLORS.primary
+        : COLORS.tertiary;
 
   return (
     <Box
@@ -168,7 +113,13 @@ function SummaryCard({
   );
 }
 
-function FriendRow({ friend, isMobile }: { friend: Friend; isMobile: boolean }) {
+function FriendRow({
+  friend,
+  isMobile,
+}: {
+  friend: Friend;
+  isMobile: boolean;
+}) {
   const navigate = useNavigate();
   const isPositive = friend.balance > 0;
   const isZero = friend.balance === 0;
@@ -228,7 +179,11 @@ function FriendRow({ friend, isMobile }: { friend: Friend; isMobile: boolean }) 
           {!isMobile && friend.connections && (
             <Typography
               variant="caption"
-              sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
+              sx={{
+                color: COLORS.onSurfaceVariant,
+                textTransform: "none",
+                letterSpacing: 0,
+              }}
             >
               +{friend.connections} connections
             </Typography>
@@ -270,11 +225,22 @@ function FriendRow({ friend, isMobile }: { friend: Friend; isMobile: boolean }) 
                 {isPositive ? "Owes You" : "You Owe"}
               </Typography>
             ) : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  justifyContent: "flex-end",
+                }}
+              >
                 {isPositive ? (
-                  <ArrowUpwardRoundedIcon sx={{ fontSize: 16, color: COLORS.primary }} />
+                  <ArrowUpwardRoundedIcon
+                    sx={{ fontSize: 16, color: COLORS.primary }}
+                  />
                 ) : (
-                  <ArrowDownwardRoundedIcon sx={{ fontSize: 16, color: COLORS.tertiary }} />
+                  <ArrowDownwardRoundedIcon
+                    sx={{ fontSize: 16, color: COLORS.tertiary }}
+                  />
                 )}
               </Box>
             )}
@@ -291,7 +257,11 @@ function FriendRow({ friend, isMobile }: { friend: Friend; isMobile: boolean }) 
             {!isMobile && (
               <Typography
                 variant="caption"
-                sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
+                sx={{
+                  color: COLORS.onSurfaceVariant,
+                  textTransform: "none",
+                  letterSpacing: 0,
+                }}
               >
                 {isPositive ? "they owe you" : "you owe them"}
               </Typography>
@@ -301,7 +271,9 @@ function FriendRow({ friend, isMobile }: { friend: Friend; isMobile: boolean }) 
       </Box>
 
       {!isMobile && (
-        <ChevronRightRoundedIcon sx={{ color: COLORS.onSurfaceVariant, flexShrink: 0 }} />
+        <ChevronRightRoundedIcon
+          sx={{ color: COLORS.onSurfaceVariant, flexShrink: 0 }}
+        />
       )}
     </Box>
   );
@@ -315,33 +287,46 @@ export default function FriendsList() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("balance");
   const [addFriendOpen, setAddFriendOpen] = useState(false);
 
-  const theyOweYou = FRIENDS.filter((f) => f.balance > 0).reduce(
-    (sum, f) => sum + f.balance,
-    0
-  );
-  const youOweThem = FRIENDS.filter((f) => f.balance < 0).reduce(
-    (sum, f) => sum + Math.abs(f.balance),
-    0
-  );
-  const netBalance = theyOweYou - youOweThem;
-  const activeCount = FRIENDS.filter((f) => f.status === "active").length;
+  useEffect(() => {
+    fetch("/api/friend")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load friends");
+        return res.json();
+      })
+      .then((data: { friends: ApiFriend[] }) =>
+        setFriends(data.friends.map(toFriend)),
+      )
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const filtered = FRIENDS.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => {
-    if (sort === "name") return a.name.localeCompare(b.name);
-    if (sort === "balance") return b.balance - a.balance;
-    if (sort === "status") return a.status.localeCompare(b.status);
-    return 0;
-  });
+  const theyOweYou = friends
+    .filter((f) => f.balance > 0)
+    .reduce((sum, f) => sum + f.balance, 0);
+  const youOweThem = friends
+    .filter((f) => f.balance < 0)
+    .reduce((sum, f) => sum + Math.abs(f.balance), 0);
+  const netBalance = theyOweYou - youOweThem;
+  const activeCount = friends.filter((f) => f.status === "active").length;
+
+  const filtered = friends
+    .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === "balance") return b.balance - a.balance;
+      if (sort === "status") return a.status.localeCompare(b.status);
+      return 0;
+    });
 
   return (
     <Box sx={{ maxWidth: { xs: "100%", md: 800 } }}>
-
       {/* ── Desktop header ── */}
       {!isMobile && (
         <Box
@@ -355,7 +340,11 @@ export default function FriendsList() {
           <Box>
             <Typography
               variant="h4"
-              sx={{ fontWeight: 700, color: COLORS.onSurface, letterSpacing: "-0.02em" }}
+              sx={{
+                fontWeight: 700,
+                color: COLORS.onSurface,
+                letterSpacing: "-0.02em",
+              }}
             >
               Friends
             </Typography>
@@ -363,7 +352,9 @@ export default function FriendsList() {
               variant="body2"
               sx={{ color: COLORS.onSurfaceVariant, mt: 0.5 }}
             >
-              {FRIENDS.length} friends · {FRIENDS.filter((f) => f.balance !== 0).length} with outstanding balances
+              {friends.length} friends ·{" "}
+              {friends.filter((f) => f.balance !== 0).length} with outstanding
+              balances
             </Typography>
           </Box>
           <Button
@@ -386,7 +377,9 @@ export default function FriendsList() {
             placeholder="Search friends…"
             startAdornment={
               <InputAdornment position="start">
-                <SearchRoundedIcon sx={{ color: COLORS.onSurfaceVariant, fontSize: 20 }} />
+                <SearchRoundedIcon
+                  sx={{ color: COLORS.onSurfaceVariant, fontSize: 20 }}
+                />
               </InputAdornment>
             }
             fullWidth
@@ -433,7 +426,14 @@ export default function FriendsList() {
             <ArrowUpwardRoundedIcon
               sx={{ color: `${COLORS.onPrimaryContainer}cc`, fontSize: 28 }}
             />
-            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
               <Typography
                 sx={{
                   fontSize: "0.625rem",
@@ -546,9 +546,17 @@ export default function FriendsList() {
       ) : (
         /* Desktop: 3-col equal row */
         <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
-          <SummaryCard label="Net Balance" amount={netBalance} positive={netBalance >= 0} />
+          <SummaryCard
+            label="Net Balance"
+            amount={netBalance}
+            positive={netBalance >= 0}
+          />
           <SummaryCard label="They Owe You" amount={theyOweYou} positive />
-          <SummaryCard label="You Owe Them" amount={youOweThem} positive={false} />
+          <SummaryCard
+            label="You Owe Them"
+            amount={youOweThem}
+            positive={false}
+          />
         </Box>
       )}
 
@@ -561,14 +569,18 @@ export default function FriendsList() {
             placeholder="Search friends…"
             startAdornment={
               <InputAdornment position="start">
-                <SearchRoundedIcon sx={{ color: COLORS.onSurfaceVariant, fontSize: 20 }} />
+                <SearchRoundedIcon
+                  sx={{ color: COLORS.onSurfaceVariant, fontSize: 20 }}
+                />
               </InputAdornment>
             }
             sx={{ flex: 1, height: 44, fontSize: "0.875rem" }}
           />
           <Select
             value={sort}
-            onChange={(e: SelectChangeEvent) => setSort(e.target.value as SortKey)}
+            onChange={(e: SelectChangeEvent) =>
+              setSort(e.target.value as SortKey)
+            }
             displayEmpty
             sx={{
               height: 44,
@@ -618,8 +630,43 @@ export default function FriendsList() {
       )}
 
       {/* ── Friends list ── */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: isMobile ? 2 : 1.5 }}>
-        {filtered.length === 0 ? (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: isMobile ? 2 : 1.5,
+        }}
+      >
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                height: 72,
+                borderRadius: 3,
+                bgcolor: COLORS.surfaceContainerLowest,
+                animation: "pulse 1.5s ease-in-out infinite",
+                "@keyframes pulse": {
+                  "0%, 100%": { opacity: 1 },
+                  "50%": { opacity: 0.4 },
+                },
+              }}
+            />
+          ))
+        ) : error ? (
+          <Box
+            sx={{
+              py: 8,
+              textAlign: "center",
+              bgcolor: COLORS.surfaceContainerLowest,
+              borderRadius: 3,
+            }}
+          >
+            <Typography variant="body1" sx={{ color: COLORS.tertiary }}>
+              {error}
+            </Typography>
+          </Box>
+        ) : filtered.length === 0 ? (
           <Box
             sx={{
               py: 8,
@@ -629,7 +676,9 @@ export default function FriendsList() {
             }}
           >
             <Typography variant="body1" sx={{ color: COLORS.onSurfaceVariant }}>
-              No friends match &ldquo;{search}&rdquo;
+              {search
+                ? `No friends match "${search}"`
+                : "No friends yet. Add one!"}
             </Typography>
           </Box>
         ) : (
@@ -639,7 +688,10 @@ export default function FriendsList() {
         )}
       </Box>
 
-      <AddFriendModal open={addFriendOpen} onClose={() => setAddFriendOpen(false)} />
+      <AddFriendModal
+        open={addFriendOpen}
+        onClose={() => setAddFriendOpen(false)}
+      />
     </Box>
   );
 }
