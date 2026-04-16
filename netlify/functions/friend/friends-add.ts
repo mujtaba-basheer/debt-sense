@@ -1,16 +1,7 @@
-import type { Config, Context } from "@netlify/functions";
-import { sql } from "./db";
-import { addFriendSchema } from "../../src/logic/friend";
+import { sql } from "../db";
+import { addFriendSchema } from "../../../src/logic/friend";
 
-export const config: Config = {
-  path: "/api/friends/add",
-};
-
-export default async function handler(req: Request, _ctx: Context) {
-  if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
-  }
-
+export async function handlePost(req: Request) {
   let body: unknown;
   try {
     body = await req.json();

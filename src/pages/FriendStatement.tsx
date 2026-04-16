@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
@@ -15,8 +16,10 @@ import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRounded";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { COLORS } from "@/theme";
 import { fmt, CATEGORY_ICONS } from "@/utils";
+import DeleteFriendModal from "@/components/DeleteFriendModal";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -285,6 +288,8 @@ export default function FriendStatement() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const friend = (friendId ? FRIENDS_DATA[friendId] : undefined) ?? DEFAULT_FRIEND;
   const isPositive = friend.balance >= 0;
@@ -624,6 +629,20 @@ export default function FriendStatement() {
               <Box sx={{ display: "flex", gap: 1.5 }}>
                 <Button
                   variant="outlined"
+                  startIcon={<DeleteOutlineRoundedIcon />}
+                  onClick={() => setDeleteOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: `${COLORS.error}44`,
+                    color: COLORS.error,
+                    fontWeight: 500,
+                    "&:hover": { borderColor: COLORS.error, bgcolor: COLORS.errorContainer },
+                  }}
+                >
+                  Delete
+                </Button>
+                <Button
+                  variant="outlined"
                   startIcon={<NotificationsRoundedIcon />}
                   sx={{
                     borderRadius: 2,
@@ -681,6 +700,17 @@ export default function FriendStatement() {
           </Box>
         </>
       )}
+
+      <DeleteFriendModal
+        open={deleteOpen}
+        friendName={friend.name}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          // TODO: wire up to backend
+          setDeleteOpen(false);
+          navigate("/friends");
+        }}
+      />
     </Box>
   );
 }
