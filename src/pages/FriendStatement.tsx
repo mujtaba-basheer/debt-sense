@@ -21,6 +21,7 @@ import { COLORS } from "@/theme";
 import { fmt, CATEGORY_ICONS } from "@/utils";
 import DeleteFriendModal from "@/components/DeleteFriendModal";
 import type { Friend as ApiFriend } from "@/types/friend";
+import type { Transaction as ApiTransaction } from "@/types/transaction";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,9 +62,8 @@ interface FriendData {
 
 const STATIC_PLACEHOLDER: Pick<
   FriendData,
-  "balance" | "balanceChange" | "trustLevel" | "trustStreak" | "friendSince" | "totalTransactions" | "transactions" | "sharedGroups" | "categoryBreakdown"
+  "balanceChange" | "trustLevel" | "trustStreak" | "friendSince" | "totalTransactions" | "transactions" | "sharedGroups" | "categoryBreakdown"
 > = {
-  balance: 0,
   balanceChange: 0,
   trustLevel: "New",
   trustStreak: "No transactions yet",
@@ -82,8 +82,21 @@ function toFriendData(f: ApiFriend): FriendData {
     name: f.name,
     initials: f.initials,
     avatarColor: f.avatar_color,
-    group: f.relation, // TODO: replace with real group once that exists
+    group: f.relation,
+    balance: 0,
     ...STATIC_PLACEHOLDER,
+  };
+}
+
+function toLocalTransaction(t: ApiTransaction): Transaction {
+  const amount = parseFloat(t.amount);
+  return {
+    id: t.id,
+    description: t.notes ?? "Transaction",
+    category: (t.category ?? "other") as Transaction["category"],
+    date: new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    total: amount,
+    yourShare: t.type === "lent" ? amount : -amount,
   };
 }
 
@@ -238,12 +251,27 @@ export default function FriendStatement() {
 
   useEffect(() => {
     if (!friendId) return;
-    fetch(`/api/friend/${friendId}`)
+
+    const friendPromise = fetch(`/api/friend/${friendId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Friend not found");
-        return res.json();
+        return res.json() as Promise<{ friend: ApiFriend }>;
+      });
+
+    const txPromise = fetch(`/api/transaction/friend/${friendId}`)
+      .then((res) => res.json() as Promise<{ transactions: ApiTransaction[] }>);
+
+    const summaryPromise = fetch(`/api/transaction/friend/${friendId}/summary`)
+      .then((res) => res.json() as Promise<{ total_lent: string; total_borrowed: string }>);
+
+    Promise.all([friendPromise, txPromise, summaryPromise])
+      .then(([friendData, txData, summary]) => {
+        const mapped = toFriendData(friendData.friend);
+        mapped.transactions = txData.transactions.map(toLocalTransaction);
+        mapped.totalTransactions = txData.transactions.length;
+        mapped.balance = parseFloat(summary.total_lent) - parseFloat(summary.total_borrowed);
+        setFriend(mapped);
       })
-      .then((data: { friend: ApiFriend }) => setFriend(toFriendData(data.friend)))
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [friendId]);

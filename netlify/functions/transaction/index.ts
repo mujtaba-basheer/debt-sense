@@ -1,11 +1,11 @@
-import type { Config, Context } from "@netlify/functions";
+import type { Config } from "@netlify/functions";
 import { handlePost } from "./transaction-add";
 
 export const config: Config = {
   path: "/api/transaction",
 };
 
-export default async function handler(req: Request, _ctx: Context) {
+export default async function handler(req: Request) {
   switch (req.method) {
     case "POST":
       return handlePost(req);
