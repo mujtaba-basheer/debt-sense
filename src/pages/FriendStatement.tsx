@@ -20,6 +20,7 @@ import { COLORS } from "@/theme";
 import { fmt, apiFetch } from "@/utils";
 import TransactionRow from "@/components/TransactionRow";
 import DeleteFriendModal from "@/components/DeleteFriendModal";
+import SettleAllModal from "@/components/SettleAllModal";
 import type { Friend as ApiFriend } from "@/types/friend";
 import type { Transaction as ApiTransaction } from "@/types/transaction";
 
@@ -209,6 +210,7 @@ export default function FriendStatement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [settleOpen, setSettleOpen] = useState(false);
 
   useEffect(() => {
     if (!friendId) return;
@@ -477,6 +479,7 @@ export default function FriendStatement() {
               <Button
                 variant="contained"
                 startIcon={<CheckCircleRoundedIcon />}
+                onClick={() => setSettleOpen(true)}
                 sx={{ flex: 1, py: 1.75, borderRadius: 2, fontWeight: 700 }}
               >
                 Settle Up
@@ -649,7 +652,12 @@ export default function FriendStatement() {
                 >
                   Delete
                 </Button>
-                <Button variant="contained" startIcon={<CheckCircleRoundedIcon />} sx={{ borderRadius: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<CheckCircleRoundedIcon />}
+                  onClick={() => setSettleOpen(true)}
+                  sx={{ borderRadius: 2 }}
+                >
                   Settle Up
                 </Button>
               </Box>
@@ -712,6 +720,21 @@ export default function FriendStatement() {
           </Box>
         </>
       )}
+
+      <SettleAllModal
+        open={settleOpen}
+        friendId={friend.id}
+        friendName={friend.name}
+        onClose={() => setSettleOpen(false)}
+        onSettled={() => {
+          setFriend((prev) =>
+            prev
+              ? { ...prev, balance: 0, transactions: prev.transactions.map((t) => ({ ...t, status: "settled" as const })) }
+              : prev
+          );
+          setSettleOpen(false);
+        }}
+      />
 
       <DeleteFriendModal
         open={deleteOpen}
