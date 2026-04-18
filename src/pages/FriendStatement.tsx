@@ -492,21 +492,23 @@ export default function FriendStatement() {
               </Typography>
             </Box>
 
-            <Typography
-              variant="caption"
-              sx={{
-                color: COLORS.primary,
-                textTransform: "none",
-                letterSpacing: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                mb: 3,
-              }}
-            >
-              <WorkspacePremiumRoundedIcon sx={{ fontSize: 13 }} />
-              {friend.trustStreak}
-            </Typography>
+            {friend.totalTransactions === 0 && (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: COLORS.primary,
+                  textTransform: "none",
+                  letterSpacing: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  mb: 3,
+                }}
+              >
+                <WorkspacePremiumRoundedIcon sx={{ fontSize: 13 }} />
+                {friend.trustStreak}
+              </Typography>
+            )}
 
             {/* Side-by-side action buttons */}
             <Box sx={{ display: "flex", gap: 1.5 }}>
@@ -651,13 +653,15 @@ export default function FriendStatement() {
                 >
                   {fmt(friend.balance)}
                 </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: COLORS.primary, textTransform: "none", letterSpacing: 0, display: "flex", alignItems: "center", gap: 0.5, mt: 0.75 }}
-                >
-                  <WorkspacePremiumRoundedIcon sx={{ fontSize: 13 }} />
-                  {friend.trustStreak}
-                </Typography>
+                {friend.totalTransactions === 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: COLORS.primary, textTransform: "none", letterSpacing: 0, display: "flex", alignItems: "center", gap: 0.5, mt: 0.75 }}
+                  >
+                    <WorkspacePremiumRoundedIcon sx={{ fontSize: 13 }} />
+                    {friend.trustStreak}
+                  </Typography>
+                )}
               </Box>
 
               <Box sx={{ display: "flex", gap: 1.5 }}>

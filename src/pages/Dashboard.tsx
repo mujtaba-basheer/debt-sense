@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -24,15 +25,13 @@ import CallReceivedRoundedIcon from "@mui/icons-material/CallReceivedRounded";
 import { COLORS } from "@/theme";
 import { fmt, fmtShort, CATEGORY_ICONS } from "@/utils";
 
-// ─── Dummy data ────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-const STATS = {
-  netBalance: 12450.8,
-  netChange: 8.4,
-  theyOweYou: 14220,
-  youOweThem: 1770,
-  pendingSettlements: 3,
-};
+interface Summary {
+  net_balance: string;
+  total_lent: string;
+  total_borrowed: string;
+}
 
 const TOP_DEBTORS = [
   { id: "6", name: "Sarah Jenkins", initials: "SJ", amount: 1200, avatarColor: "#006c49", daysOverdue: 0 },
@@ -207,6 +206,23 @@ export default function Dashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  const [summary, setSummary] = useState<Summary>({
+    net_balance: "0",
+    total_lent: "0",
+    total_borrowed: "0",
+  });
+
+  useEffect(() => {
+    fetch("/api/transaction/summary")
+      .then((res) => res.json() as Promise<Summary>)
+      .then(setSummary)
+      .catch(() => {});
+  }, []);
+
+  const netBalance = parseFloat(summary.net_balance);
+  const theyOweYou = parseFloat(summary.total_lent);
+  const youOweThem = parseFloat(summary.total_borrowed);
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -214,7 +230,7 @@ export default function Dashboard() {
   });
 
   // Split balance into integer and decimal for mobile big-number display
-  const [balanceInt, balanceDec] = STATS.netBalance.toFixed(2).split(".");
+  const [balanceInt, balanceDec] = netBalance.toFixed(2).split(".");
   const balanceIntFormatted = Number(balanceInt).toLocaleString("en-US");
 
   return (
@@ -283,14 +299,8 @@ export default function Dashboard() {
                 Net Balance
               </Typography>
               <Typography variant="h3" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1, mb: 1 }}>
-                {fmt(STATS.netBalance)}
+                {fmt(netBalance)}
               </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TrendingUpRoundedIcon sx={{ fontSize: 16, color: COLORS.primaryFixedDim }} />
-                <Typography variant="body2" sx={{ color: COLORS.primaryFixedDim, fontWeight: 600 }}>
-                  +{STATS.netChange}% from last month
-                </Typography>
-              </Box>
             </Box>
 
             <Box sx={{ display: "flex", gap: 4, position: "relative", flexShrink: 0 }}>
@@ -299,7 +309,7 @@ export default function Dashboard() {
                   They owe you
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
-                  {fmtShort(STATS.theyOweYou)}
+                  {fmtShort(theyOweYou)}
                 </Typography>
               </Box>
               <Box sx={{ width: 1, bgcolor: "rgba(255,255,255,0.2)", borderRadius: 99 }} />
@@ -308,7 +318,7 @@ export default function Dashboard() {
                   You owe them
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
-                  {fmtShort(STATS.youOweThem)}
+                  {fmtShort(youOweThem)}
                 </Typography>
               </Box>
               <Box sx={{ width: 1, bgcolor: "rgba(255,255,255,0.2)", borderRadius: 99 }} />
@@ -317,7 +327,7 @@ export default function Dashboard() {
                   Pending
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
-                  {STATS.pendingSettlements}
+                  {0}
                 </Typography>
               </Box>
             </Box>
@@ -369,7 +379,7 @@ export default function Dashboard() {
             >
               <TrendingUpRoundedIcon sx={{ fontSize: 16, color: COLORS.primaryContainer }} />
               <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.onPrimaryContainer }}>
-                +{STATS.netChange}% from last month
+                +{0}% from last month
               </Typography>
             </Box>
           </Box>
@@ -409,7 +419,7 @@ export default function Dashboard() {
                 Owed to you
               </Typography>
               <Typography sx={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-                {fmtShort(STATS.theyOweYou)}
+                {fmtShort(theyOweYou)}
               </Typography>
               <Typography sx={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.90)", mt: 0.5 }}>
                 {TOP_DEBTORS.length} people owe you
@@ -449,10 +459,10 @@ export default function Dashboard() {
                 You owe
               </Typography>
               <Typography sx={{ fontSize: "1.5rem", fontWeight: 800, color: COLORS.onSurface, letterSpacing: "-0.02em" }}>
-                {fmtShort(STATS.youOweThem)}
+                {fmtShort(youOweThem)}
               </Typography>
               <Typography sx={{ fontSize: "0.75rem", color: COLORS.onSurfaceVariant, mt: 0.5 }}>
-                {STATS.pendingSettlements} pending payments
+                {0} pending payments
               </Typography>
             </Box>
           </Box>
@@ -715,14 +725,14 @@ export default function Dashboard() {
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
                 <SectionTitle>Pending Settlements</SectionTitle>
                 <Chip
-                  label={STATS.pendingSettlements}
+                  label={0}
                   size="small"
                   color="success"
                   sx={{ height: 20, fontSize: "0.6875rem", mb: 2 }}
                 />
               </Box>
               <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
-                You have {STATS.pendingSettlements} unsettled balances waiting for confirmation.
+                You have {0} unsettled balances waiting for confirmation.
               </Typography>
               <Button
                 variant="contained"

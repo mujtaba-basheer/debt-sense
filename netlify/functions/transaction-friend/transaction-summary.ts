@@ -16,6 +16,12 @@ export async function handleGetSummaryByFriend(friendId: string) {
 
   return new Response(
     JSON.stringify({ total_lent, total_borrowed }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=1800, stale-while-revalidate=60",
+      },
+    }
   );
 }

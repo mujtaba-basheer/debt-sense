@@ -10,6 +10,9 @@ export async function handleGetByFriend(friendId: string) {
 
   return new Response(JSON.stringify({ transactions: rows as Transaction[] }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=1800, stale-while-revalidate=60",
+    },
   });
 }

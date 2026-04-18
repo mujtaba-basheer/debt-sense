@@ -9,6 +9,9 @@ export async function handleGet() {
 
   return new Response(JSON.stringify({ friends: rows as Friend[] }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=60",
+    },
   });
 }
