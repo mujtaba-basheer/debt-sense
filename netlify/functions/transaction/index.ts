@@ -1,6 +1,6 @@
 import type { Config, Context } from "@netlify/functions";
 import { handlePost } from "./transaction-add";
-import { handleGetList } from "./transaction-list";
+import { handleGetLatest, handleGetAll } from "./transaction-list";
 import { handleGetSummary } from "./transaction-summary";
 import { handleDelete } from "./transaction-delete";
 import { handleSettle } from "./transaction-settle";
@@ -9,6 +9,7 @@ import { verifyAuth, requireAdmin, authErrorResponse } from "../lib/auth";
 export const config: Config = {
   path: [
     "/api/transaction",
+    "/api/transaction/latest",
     "/api/transaction/summary",
     "/api/transaction/:id",
     "/api/transaction/:id/settle",
@@ -16,15 +17,19 @@ export const config: Config = {
 };
 
 export default async function handler(req: Request, ctx: Context) {
-  const pathname = new URL(req.url).pathname;
+  const url = new URL(req.url);
+  const pathname = url.pathname;
   const isSummary = pathname.endsWith("/summary");
+  const isLatest = pathname.endsWith("/latest");
   const id = ctx.params?.id;
 
   try {
     switch (req.method) {
       case "GET":
         verifyAuth(req);
-        return isSummary ? handleGetSummary() : handleGetList();
+        if (isSummary) return handleGetSummary();
+        if (isLatest) return handleGetLatest();
+        return handleGetAll(url);
       case "POST":
         requireAdmin(req);
         return handlePost(req);

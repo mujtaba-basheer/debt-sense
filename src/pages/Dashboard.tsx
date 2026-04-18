@@ -150,7 +150,7 @@ export default function Dashboard() {
       .then(setSummary)
       .catch(() => {});
 
-    apiFetch("/api/transaction")
+    apiFetch("/api/transaction/latest")
       .then((res) => res.json() as Promise<{ transactions: ApiTransaction[] }>)
       .then(({ transactions }) => setActivity(transactions.map(toActivity)))
       .catch(() => {});
@@ -498,7 +498,6 @@ export default function Dashboard() {
                   amount={item.amount}
                   positive={item.positive}
                   status={item.status}
-                  amountLabel={item.date}
                   iconSize={48}
                   positiveColor={COLORS.primaryContainer}
                   negativeColor={COLORS.onSurface}

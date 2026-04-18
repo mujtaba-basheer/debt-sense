@@ -212,8 +212,10 @@ export default function FriendStatement() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
 
-  useEffect(() => {
+  function fetchData() {
     if (!friendId) return;
+    setLoading(true);
+    setError(null);
 
     const friendPromise = apiFetch(`/api/friend/${friendId}`)
       .then((res) => {
@@ -237,7 +239,9 @@ export default function FriendStatement() {
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [friendId]);
+  }
+
+  useEffect(() => { fetchData(); }, [friendId]);
 
   if (loading) {
     return (
@@ -727,12 +731,8 @@ export default function FriendStatement() {
         friendName={friend.name}
         onClose={() => setSettleOpen(false)}
         onSettled={() => {
-          setFriend((prev) =>
-            prev
-              ? { ...prev, balance: 0, transactions: prev.transactions.map((t) => ({ ...t, status: "settled" as const })) }
-              : prev
-          );
           setSettleOpen(false);
+          fetchData();
         }}
       />
 
