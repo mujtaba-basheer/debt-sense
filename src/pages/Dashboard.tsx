@@ -23,6 +23,7 @@ import CallReceivedRoundedIcon from "@mui/icons-material/CallReceivedRounded";
 import { COLORS } from "@/theme";
 import { fmt, fmtShort, CATEGORY_ICONS, apiFetch } from "@/utils";
 import TransactionRow from "@/components/TransactionRow";
+import type { Transaction } from "@/types/transaction";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,15 +33,7 @@ interface Summary {
   total_borrowed: string;
 }
 
-interface ApiTransaction {
-  id: string;
-  friend_name: string;
-  type: "lent" | "borrowed";
-  amount: string;
-  category: string | null;
-  date: string;
-  notes: string | null;
-}
+type ApiTransaction = Transaction & { friend_name: string };
 
 interface Activity {
   id: string;
@@ -50,6 +43,7 @@ interface Activity {
   date: string;
   amount: number;
   positive: boolean;
+  status: "pending" | "settled";
 }
 
 function toActivity(t: ApiTransaction): Activity {
@@ -78,6 +72,7 @@ function toActivity(t: ApiTransaction): Activity {
     date: dateLabel,
     amount: parseFloat(t.amount),
     positive: t.type === "lent",
+    status: t.status,
   };
 }
 
@@ -502,6 +497,7 @@ export default function Dashboard() {
                   subtitle={`with ${item.friend} · ${item.date}`}
                   amount={item.amount}
                   positive={item.positive}
+                  status={item.status}
                   amountLabel={item.date}
                   iconSize={48}
                   positiveColor={COLORS.primaryContainer}
@@ -537,6 +533,7 @@ export default function Dashboard() {
                   subtitle={`with ${item.friend} · ${item.date}`}
                   amount={item.amount}
                   positive={item.positive}
+                  status={item.status}
                   showTrendIcon
                   showDivider={i < activity.length - 1}
                 />
