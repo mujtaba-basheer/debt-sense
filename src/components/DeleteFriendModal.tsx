@@ -29,7 +29,7 @@ export default function DeleteFriendModal({ open, friendId, friendName, onClose,
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/friend/${friendId}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/friend/${friendId}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error ?? "Failed to delete friend");

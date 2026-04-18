@@ -21,7 +21,7 @@ import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import { COLORS } from "@/theme";
-import { fmt } from "@/utils";
+import { fmt, apiFetch } from "@/utils";
 import AddFriendModal from "@/components/AddFriendModal";
 import type { Friend as ApiFriend } from "@/types/friend";
 
@@ -308,7 +308,7 @@ export default function FriendsList() {
 
   function fetchFriends() {
     setLoading(true);
-    fetch("/api/friend")
+    apiFetch("/api/friend")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load friends");
         return res.json();
@@ -322,7 +322,7 @@ export default function FriendsList() {
 
   useEffect(() => {
     fetchFriends();
-    fetch("/api/transaction/summary")
+    apiFetch("/api/transaction/summary")
       .then((res) => res.json() as Promise<TransactionSummary>)
       .then(setSummary)
       .catch(() => {});

@@ -1,6 +1,7 @@
 import type { Config, Context } from "@netlify/functions";
 import { handleGetByFriend } from "./transaction-list";
 import { handleGetSummaryByFriend } from "./transaction-summary";
+import { verifyAuth, authErrorResponse } from "../lib/auth";
 
 export const config: Config = {
   path: [
@@ -10,18 +11,23 @@ export const config: Config = {
 };
 
 export default async function handler(req: Request, ctx: Context) {
-  const friendId = ctx.params?.friendId;
+  try {
+    verifyAuth(req);
 
-  if (!friendId) return new Response("Friend id is required", { status: 400 });
+    const friendId = ctx.params?.friendId;
+    if (!friendId) return new Response("Friend id is required", { status: 400 });
 
-  const isSummary = new URL(req.url).pathname.endsWith("/summary");
+    const isSummary = new URL(req.url).pathname.endsWith("/summary");
 
-  switch (req.method) {
-    case "GET":
-      return isSummary
-        ? handleGetSummaryByFriend(friendId)
-        : handleGetByFriend(friendId);
-    default:
-      return new Response("Method Not Allowed", { status: 405 });
+    switch (req.method) {
+      case "GET":
+        return isSummary
+          ? handleGetSummaryByFriend(friendId)
+          : handleGetByFriend(friendId);
+      default:
+        return new Response("Method Not Allowed", { status: 405 });
+    }
+  } catch (err) {
+    return authErrorResponse(err);
   }
 }

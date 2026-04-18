@@ -48,7 +48,7 @@ export default function AddFriendModal({ open, onClose, onAdded }: Props) {
     validateOnChange: true,
     validateOnBlur: true,
     onSubmit: async (values, helpers) => {
-      const res = await fetch("/api/friend", {
+      const res = await apiFetch("/api/friend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

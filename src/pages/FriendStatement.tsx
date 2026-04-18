@@ -17,7 +17,7 @@ import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRou
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { COLORS } from "@/theme";
-import { fmt, CATEGORY_ICONS } from "@/utils";
+import { fmt, CATEGORY_ICONS, apiFetch } from "@/utils";
 import DeleteFriendModal from "@/components/DeleteFriendModal";
 import type { Friend as ApiFriend } from "@/types/friend";
 import type { Transaction as ApiTransaction } from "@/types/transaction";
@@ -251,16 +251,16 @@ export default function FriendStatement() {
   useEffect(() => {
     if (!friendId) return;
 
-    const friendPromise = fetch(`/api/friend/${friendId}`)
+    const friendPromise = apiFetch(`/api/friend/${friendId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Friend not found");
         return res.json() as Promise<{ friend: ApiFriend }>;
       });
 
-    const txPromise = fetch(`/api/transaction/friend/${friendId}`)
+    const txPromise = apiFetch(`/api/transaction/friend/${friendId}`)
       .then((res) => res.json() as Promise<{ transactions: ApiTransaction[] }>);
 
-    const summaryPromise = fetch(`/api/transaction/friend/${friendId}/summary`)
+    const summaryPromise = apiFetch(`/api/transaction/friend/${friendId}/summary`)
       .then((res) => res.json() as Promise<{ total_lent: string; total_borrowed: string }>);
 
     Promise.all([friendPromise, txPromise, summaryPromise])

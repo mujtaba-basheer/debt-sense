@@ -23,7 +23,7 @@ import InsightsRoundedIcon from "@mui/icons-material/InsightsRounded";
 import CallMadeRoundedIcon from "@mui/icons-material/CallMadeRounded";
 import CallReceivedRoundedIcon from "@mui/icons-material/CallReceivedRounded";
 import { COLORS } from "@/theme";
-import { fmt, fmtShort, CATEGORY_ICONS } from "@/utils";
+import { fmt, fmtShort, CATEGORY_ICONS, apiFetch } from "@/utils";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -212,12 +212,12 @@ export default function Dashboard() {
   const [activity, setActivity] = useState<Activity[]>([]);
 
   useEffect(() => {
-    fetch("/api/transaction/summary")
+    apiFetch("/api/transaction/summary")
       .then((res) => res.json() as Promise<Summary>)
       .then(setSummary)
       .catch(() => {});
 
-    fetch("/api/transaction")
+    apiFetch("/api/transaction")
       .then((res) => res.json() as Promise<{ transactions: ApiTransaction[] }>)
       .then(({ transactions }) => setActivity(transactions.map(toActivity)))
       .catch(() => {});

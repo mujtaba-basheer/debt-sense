@@ -20,9 +20,11 @@ import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import AddCircleRoundedIcon from "@mui/icons-material/AddCircleRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import { COLORS } from "@/theme";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: <DashboardRoundedIcon />, to: "/dashboard" },
@@ -37,6 +39,20 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const initials = user?.name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ?? "?";
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+    setDrawerOpen(false);
+  }
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
@@ -90,7 +106,7 @@ export default function Layout() {
                 mr: 1,
               }}
             >
-              MB
+              {initials}
             </Avatar>
           </Box>
         )}
@@ -216,9 +232,7 @@ export default function Layout() {
               borderRadius: 2,
               bgcolor: COLORS.surfaceContainerLowest,
               boxShadow: "0 4px 20px rgba(22, 29, 25, 0.06)",
-              cursor: "pointer",
             }}
-            onClick={() => { navigate("/dashboard"); setDrawerOpen(false); }}
           >
             <Avatar
               sx={{
@@ -230,16 +244,19 @@ export default function Layout() {
                 fontWeight: 700,
               }}
             >
-              MB
+              {initials}
             </Avatar>
-            <Box sx={{ overflow: "hidden" }}>
+            <Box sx={{ overflow: "hidden", flex: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2, color: COLORS.onSurface }} noWrap>
-                Mujtaba B.
+                {user?.name ?? "—"}
               </Typography>
               <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }} noWrap>
-                Personal account
+                {user?.role === "admin" ? "Admin" : "Viewer"}
               </Typography>
             </Box>
+            <IconButton size="small" onClick={handleLogout} sx={{ color: COLORS.onSurfaceVariant, "&:hover": { color: COLORS.error } }}>
+              <LogoutRoundedIcon fontSize="small" />
+            </IconButton>
           </Box>
         </Box>
       </Drawer>

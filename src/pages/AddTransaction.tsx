@@ -102,7 +102,7 @@ export default function AddTransaction() {
   const [friends, setFriends] = useState<Friend[]>([]);
 
   useEffect(() => {
-    fetch("/api/friend")
+    apiFetch("/api/friend")
       .then((res) => res.json())
       .then((data: { friends: Friend[] }) => setFriends(data.friends))
       .catch(() => {});
@@ -114,7 +114,7 @@ export default function AddTransaction() {
     validateOnChange: true,
     validateOnBlur: true,
     onSubmit: async (values, helpers) => {
-      const res = await fetch("/api/transaction", {
+      const res = await apiFetch("/api/transaction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
