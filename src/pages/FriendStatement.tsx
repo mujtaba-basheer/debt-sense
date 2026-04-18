@@ -523,7 +523,6 @@ export default function FriendStatement() {
                     subtitle={`${tx.date} · Total ${fmt(tx.total)}`}
                     amount={Math.abs(tx.yourShare)}
                     positive={tx.yourShare > 0}
-                    amountLabel="your share"
                     iconSize={40}
                     status={tx.status}
                     showDivider={i < friend.transactions.length - 1}
@@ -680,7 +679,6 @@ export default function FriendStatement() {
                     subtitle={`${tx.date} · Total ${fmt(tx.total)}`}
                     amount={Math.abs(tx.yourShare)}
                     positive={tx.yourShare > 0}
-                    amountLabel="your share"
                     iconSize={40}
                     status={tx.status}
                     showDivider={i < friend.transactions.length - 1}

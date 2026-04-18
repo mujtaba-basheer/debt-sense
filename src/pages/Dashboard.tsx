@@ -537,7 +537,6 @@ export default function Dashboard() {
                   subtitle={`with ${item.friend} · ${item.date}`}
                   amount={item.amount}
                   positive={item.positive}
-                  amountLabel="your share"
                   showTrendIcon
                   showDivider={i < activity.length - 1}
                 />

@@ -20,7 +20,8 @@ export async function handleGetList() {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=10",
+        // "Cache-Control": "public, max-age=60, stale-while-revalidate=10",
+        "Cache-Control": "no-cache",
       },
     },
   );
