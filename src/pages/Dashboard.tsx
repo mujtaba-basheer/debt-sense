@@ -6,14 +6,12 @@ import {
   Avatar,
   Button,
   Chip,
-  Divider,
   LinearProgress,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
-import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
 import LightbulbRoundedIcon from "@mui/icons-material/LightbulbRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
@@ -24,6 +22,7 @@ import CallMadeRoundedIcon from "@mui/icons-material/CallMadeRounded";
 import CallReceivedRoundedIcon from "@mui/icons-material/CallReceivedRounded";
 import { COLORS } from "@/theme";
 import { fmt, fmtShort, CATEGORY_ICONS, apiFetch } from "@/utils";
+import TransactionRow from "@/components/TransactionRow";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -137,67 +136,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Typography>
-  );
-}
-
-function ActivityRow({ item, showDivider }: { item: Activity; showDivider: boolean }) {
-  return (
-    <Box>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 1.75 }}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 2,
-            bgcolor: COLORS.surfaceContainerLow,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: COLORS.onSurfaceVariant,
-            flexShrink: 0,
-          }}
-        >
-          {CATEGORY_ICONS[item.category]}
-        </Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 600, color: COLORS.onSurface }}
-            noWrap
-          >
-            {item.description}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-          >
-            with {item.friend} · {item.date}
-          </Typography>
-        </Box>
-        <Box sx={{ textAlign: "right", flexShrink: 0 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}>
-            {item.positive ? (
-              <TrendingUpRoundedIcon sx={{ fontSize: 14, color: COLORS.primary }} />
-            ) : (
-              <TrendingDownRoundedIcon sx={{ fontSize: 14, color: COLORS.tertiary }} />
-            )}
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 700, color: item.positive ? COLORS.primary : COLORS.tertiary }}
-            >
-              {item.positive ? "+" : "-"}{fmt(item.amount)}
-            </Typography>
-          </Box>
-          <Typography
-            variant="caption"
-            sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}
-          >
-            your share
-          </Typography>
-        </Box>
-      </Box>
-      {showDivider && <Divider />}
-    </Box>
   );
 }
 
@@ -554,43 +492,21 @@ export default function Dashboard() {
                 See All
               </Button>
             </Box>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <Box sx={{ display: "flex", flexDirection: "column" }}>
               {activity.slice(0, 4).map((item) => (
-                <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 2, cursor: "pointer" }}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      bgcolor: COLORS.surfaceContainerLow,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: COLORS.onSurfaceVariant,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {CATEGORY_ICONS[item.category]}
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 700, color: COLORS.onSurface, fontSize: "0.9375rem" }} noWrap>
-                      {item.description}
-                    </Typography>
-                    <Typography sx={{ fontSize: "0.75rem", color: COLORS.outline }}>
-                      with {item.friend} · {item.date}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: "right", flexShrink: 0 }}>
-                    <Typography
-                      sx={{ fontWeight: 800, color: item.positive ? COLORS.primaryContainer : COLORS.onSurface }}
-                    >
-                      {item.positive ? "+" : "-"}{fmt(item.amount)}
-                    </Typography>
-                    <Typography sx={{ fontSize: "0.625rem", textTransform: "uppercase", fontWeight: 700, color: COLORS.outline }}>
-                      {item.date}
-                    </Typography>
-                  </Box>
-                </Box>
+                <TransactionRow
+                  key={item.id}
+                  id={item.id}
+                  description={item.description}
+                  category={item.category}
+                  subtitle={`with ${item.friend} · ${item.date}`}
+                  amount={item.amount}
+                  positive={item.positive}
+                  amountLabel={item.date}
+                  iconSize={48}
+                  positiveColor={COLORS.primaryContainer}
+                  negativeColor={COLORS.onSurface}
+                />
               ))}
             </Box>
           </Box>
@@ -613,7 +529,18 @@ export default function Dashboard() {
                 </Button>
               </Box>
               {activity.map((item, i) => (
-                <ActivityRow key={item.id} item={item} showDivider={i < activity.length - 1} />
+                <TransactionRow
+                  key={item.id}
+                  id={item.id}
+                  description={item.description}
+                  category={item.category}
+                  subtitle={`with ${item.friend} · ${item.date}`}
+                  amount={item.amount}
+                  positive={item.positive}
+                  amountLabel="your share"
+                  showTrendIcon
+                  showDivider={i < activity.length - 1}
+                />
               ))}
             </Card>
 

@@ -17,7 +17,8 @@ import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRou
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { COLORS } from "@/theme";
-import { fmt, CATEGORY_ICONS, apiFetch } from "@/utils";
+import { fmt, apiFetch } from "@/utils";
+import TransactionRow from "@/components/TransactionRow";
 import DeleteFriendModal from "@/components/DeleteFriendModal";
 import type { Friend as ApiFriend } from "@/types/friend";
 import type { Transaction as ApiTransaction } from "@/types/transaction";
@@ -31,6 +32,7 @@ interface Transaction {
   date: string;
   total: number;
   yourShare: number; // positive = they owe you, negative = you owe them
+  status: "pending" | "settled";
 }
 
 interface SharedGroup {
@@ -96,6 +98,7 @@ function toLocalTransaction(t: ApiTransaction): Transaction {
     date: new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     total: amount,
     yourShare: t.type === "lent" ? amount : -amount,
+    status: t.status,
   };
 }
 
@@ -109,47 +112,6 @@ const TRUST_COLORS: Record<FriendData["trustLevel"], string> = {
 
 // ─── Shared sub-components ─────────────────────────────────────────────────────
 
-function TransactionRow({ tx }: { tx: Transaction }) {
-  const isPositive = tx.yourShare > 0;
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 2 }}>
-      <Box
-        sx={{
-          width: 40,
-          height: 40,
-          borderRadius: 2,
-          bgcolor: COLORS.surfaceContainerLow,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: COLORS.onSurfaceVariant,
-          flexShrink: 0,
-        }}
-      >
-        {CATEGORY_ICONS[tx.category]}
-      </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600, color: COLORS.onSurface }} noWrap>
-          {tx.description}
-        </Typography>
-        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}>
-          {tx.date} · Total {fmt(tx.total)}
-        </Typography>
-      </Box>
-      <Box sx={{ textAlign: "right", flexShrink: 0 }}>
-        <Typography
-          variant="body2"
-          sx={{ fontWeight: 700, color: isPositive ? COLORS.primary : COLORS.tertiary }}
-        >
-          {isPositive ? "+" : "-"}{fmt(tx.yourShare)}
-        </Typography>
-        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, textTransform: "none", letterSpacing: 0 }}>
-          your share
-        </Typography>
-      </Box>
-    </Box>
-  );
-}
 
 function SectionCard({ children, sx = {} }: { children: React.ReactNode; sx?: object }) {
   return (
@@ -553,10 +515,19 @@ export default function FriendStatement() {
                 </Typography>
               ) : (
                 friend.transactions.map((tx: Transaction, i: number) => (
-                  <Box key={tx.id}>
-                    <TransactionRow tx={tx} />
-                    {i < friend.transactions.length - 1 && <Divider />}
-                  </Box>
+                  <TransactionRow
+                    key={tx.id}
+                    id={tx.id}
+                    description={tx.description}
+                    category={tx.category}
+                    subtitle={`${tx.date} · Total ${fmt(tx.total)}`}
+                    amount={Math.abs(tx.yourShare)}
+                    positive={tx.yourShare > 0}
+                    amountLabel="your share"
+                    iconSize={40}
+                    status={tx.status}
+                    showDivider={i < friend.transactions.length - 1}
+                  />
                 ))
               )}
             </SectionCard>
@@ -701,10 +672,19 @@ export default function FriendStatement() {
                 </Typography>
               ) : (
                 friend.transactions.map((tx: Transaction, i: number) => (
-                  <Box key={tx.id}>
-                    <TransactionRow tx={tx} />
-                    {i < friend.transactions.length - 1 && <Divider />}
-                  </Box>
+                  <TransactionRow
+                    key={tx.id}
+                    id={tx.id}
+                    description={tx.description}
+                    category={tx.category}
+                    subtitle={`${tx.date} · Total ${fmt(tx.total)}`}
+                    amount={Math.abs(tx.yourShare)}
+                    positive={tx.yourShare > 0}
+                    amountLabel="your share"
+                    iconSize={40}
+                    status={tx.status}
+                    showDivider={i < friend.transactions.length - 1}
+                  />
                 ))
               )}
             </SectionCard>

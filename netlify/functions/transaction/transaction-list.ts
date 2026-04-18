@@ -1,18 +1,7 @@
 import { sql } from "../db";
+import type { Transaction } from "../../../src/types/transaction";
 
-export interface TransactionWithFriend {
-  id: string;
-  friend_id: string;
-  friend_name: string;
-  type: "lent" | "borrowed";
-  amount: string;
-  category: string | null;
-  date: string;
-  notes: string | null;
-  receipt_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type TransactionWithFriend = Transaction & { friend_name: string };
 
 export async function handleGetList() {
   const rows = await sql`

@@ -233,7 +233,7 @@ export default function AddTransaction() {
             startAdornment={
               <InputAdornment position="start">
                 <Typography sx={{ fontWeight: 700, fontSize: "1.5rem", color: accentColor }}>
-                  $
+                  ₹
                 </Typography>
               </InputAdornment>
             }

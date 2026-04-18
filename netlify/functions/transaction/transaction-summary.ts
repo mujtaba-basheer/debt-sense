@@ -9,11 +9,11 @@ export interface TransactionSummary {
 export async function handleGetSummary() {
   const rows = await sql`
     SELECT
-      COALESCE(SUM(amount) FILTER (WHERE type = 'lent'), 0)::text     AS total_lent,
-      COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed'), 0)::text  AS total_borrowed,
+      COALESCE(SUM(amount) FILTER (WHERE type = 'lent'     AND status = 'pending'), 0)::text AS total_lent,
+      COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed' AND status = 'pending'), 0)::text AS total_borrowed,
       (
-        COALESCE(SUM(amount) FILTER (WHERE type = 'lent'), 0) -
-        COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed'), 0)
+        COALESCE(SUM(amount) FILTER (WHERE type = 'lent'     AND status = 'pending'), 0) -
+        COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed' AND status = 'pending'), 0)
       )::text AS net_balance
     FROM transactions
   `;

@@ -3,8 +3,8 @@ import { sql } from "../db";
 export async function handleGetSummaryByFriend(friendId: string) {
   const rows = await sql`
     SELECT
-      COALESCE(SUM(amount) FILTER (WHERE type = 'lent'), 0)::text     AS total_lent,
-      COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed'), 0)::text  AS total_borrowed
+      COALESCE(SUM(amount) FILTER (WHERE type = 'lent'     AND status = 'pending'), 0)::text AS total_lent,
+      COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed' AND status = 'pending'), 0)::text AS total_borrowed
     FROM transactions
     WHERE friend_id = ${friendId}
   `;
