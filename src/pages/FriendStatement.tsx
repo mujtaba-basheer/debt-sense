@@ -328,7 +328,7 @@ export default function FriendStatement() {
   // Format balance as split int + decimal for mobile large display
   const absBalance = Math.abs(friend.balance);
   const [balInt, balDec] = absBalance.toFixed(2).split(".");
-  const balanceIntFormatted = Number(balInt).toLocaleString("en-US");
+  const balanceIntFormatted = Number(balInt).toLocaleString("en-IN");
 
   return (
     <Box sx={{ maxWidth: { xs: "100%", md: 720 } }}>
@@ -467,7 +467,7 @@ export default function FriendStatement() {
                   lineHeight: 1,
                 }}
               >
-                $
+                ₹
               </Typography>
               <Typography
                 sx={{

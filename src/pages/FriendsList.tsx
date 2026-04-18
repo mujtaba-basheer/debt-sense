@@ -25,7 +25,14 @@ import { fmt } from "@/utils";
 import AddFriendModal from "@/components/AddFriendModal";
 import type { Friend as ApiFriend } from "@/types/friend";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface TransactionSummary {
+  net_balance: string;
+  total_lent: string;
+  total_borrowed: string;
+}
+
 
 type FriendStatus = "active" | "overdue" | "settled";
 
@@ -293,6 +300,11 @@ export default function FriendsList() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("balance");
   const [addFriendOpen, setAddFriendOpen] = useState(false);
+  const [summary, setSummary] = useState<TransactionSummary>({
+    net_balance: "0",
+    total_lent: "0",
+    total_borrowed: "0",
+  });
 
   function fetchFriends() {
     setLoading(true);
@@ -308,15 +320,17 @@ export default function FriendsList() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { fetchFriends(); }, []);
+  useEffect(() => {
+    fetchFriends();
+    fetch("/api/transaction/summary")
+      .then((res) => res.json() as Promise<TransactionSummary>)
+      .then(setSummary)
+      .catch(() => {});
+  }, []);
 
-  const theyOweYou = friends
-    .filter((f) => f.balance > 0)
-    .reduce((sum, f) => sum + f.balance, 0);
-  const youOweThem = friends
-    .filter((f) => f.balance < 0)
-    .reduce((sum, f) => sum + Math.abs(f.balance), 0);
-  const netBalance = theyOweYou - youOweThem;
+  const theyOweYou = parseFloat(summary.total_lent);
+  const youOweThem = parseFloat(summary.total_borrowed);
+  const netBalance = parseFloat(summary.net_balance);
   const activeCount = friends.filter((f) => f.status === "active").length;
 
   const filtered = friends

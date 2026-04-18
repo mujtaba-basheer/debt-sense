@@ -235,7 +235,7 @@ export default function Dashboard() {
 
   // Split balance into integer and decimal for mobile big-number display
   const [balanceInt, balanceDec] = netBalance.toFixed(2).split(".");
-  const balanceIntFormatted = Number(balanceInt).toLocaleString("en-US");
+  const balanceIntFormatted = Number(balanceInt).toLocaleString("en-IN");
 
   return (
     <Box sx={{ maxWidth: { xs: "100%", md: 1100 } }}>
@@ -361,7 +361,7 @@ export default function Dashboard() {
             </Typography>
             <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.25, mb: 2 }}>
               <Typography sx={{ fontSize: "2rem", fontWeight: 800, color: COLORS.onSurface, lineHeight: 1 }}>
-                $
+                ₹
               </Typography>
               <Typography sx={{ fontSize: "2.75rem", fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.onSurface, lineHeight: 1 }}>
                 {balanceIntFormatted}
