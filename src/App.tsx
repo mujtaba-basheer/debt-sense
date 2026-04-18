@@ -4,11 +4,26 @@ import Dashboard from "@/pages/Dashboard";
 import FriendsList from "@/pages/FriendsList";
 import FriendStatement from "@/pages/FriendStatement";
 import AddTransaction from "@/pages/AddTransaction";
+import Login from "@/pages/Login";
+import { useAuth } from "@/context/AuthContext";
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { token } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route path="/login" element={<Login />} />
+      <Route
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/friends" element={<FriendsList />} />
