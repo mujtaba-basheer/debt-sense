@@ -33,6 +33,55 @@ interface Summary {
   total_borrowed: string;
 }
 
+interface ApiTransaction {
+  id: string;
+  friend_name: string;
+  type: "lent" | "borrowed";
+  amount: string;
+  category: string | null;
+  date: string;
+  notes: string | null;
+}
+
+interface Activity {
+  id: string;
+  description: string;
+  category: keyof typeof CATEGORY_ICONS;
+  friend: string;
+  date: string;
+  amount: number;
+  positive: boolean;
+}
+
+function toActivity(t: ApiTransaction): Activity {
+  const parts = t.friend_name.trim().split(" ");
+  const friendShort = parts.length > 1
+    ? `${parts[0]} ${parts[parts.length - 1][0]}.`
+    : parts[0];
+
+  const d = new Date(t.date);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const dateLabel = isSameDay(d, today)
+    ? "Today"
+    : isSameDay(d, yesterday)
+    ? "Yesterday"
+    : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  return {
+    id: t.id,
+    description: t.notes ?? "Transaction",
+    category: (t.category ?? "other") as Activity["category"],
+    friend: friendShort,
+    date: dateLabel,
+    amount: parseFloat(t.amount),
+    positive: t.type === "lent",
+  };
+}
+
 const TOP_DEBTORS = [
   { id: "6", name: "Sarah Jenkins", initials: "SJ", amount: 1200, avatarColor: "#006c49", daysOverdue: 0 },
   { id: "7", name: "Alex Rivera", initials: "AR", amount: 450, avatarColor: "#376850", daysOverdue: 2 },
@@ -40,53 +89,6 @@ const TOP_DEBTORS = [
   { id: "4", name: "Elena Rodriguez", initials: "ER", amount: 8500, avatarColor: "#3c6c54", daysOverdue: 0 },
 ];
 
-const RECENT_ACTIVITY = [
-  {
-    id: "a1",
-    description: "Dinner at Le Bernardin",
-    category: "dining" as const,
-    friend: "Julian C.",
-    date: "Today",
-    amount: 118.2,
-    positive: true,
-  },
-  {
-    id: "a2",
-    description: "Paris hotel split",
-    category: "leisure" as const,
-    friend: "Amelie P.",
-    date: "Yesterday",
-    amount: 490,
-    positive: false,
-  },
-  {
-    id: "a3",
-    description: "Uber to airport",
-    category: "transport" as const,
-    friend: "Sarah J.",
-    date: "Mar 30",
-    amount: 19.9,
-    positive: true,
-  },
-  {
-    id: "a4",
-    description: "Weekly groceries",
-    category: "groceries" as const,
-    friend: "Sarah J.",
-    date: "Mar 30",
-    amount: 71.9,
-    positive: true,
-  },
-  {
-    id: "a5",
-    description: "Netflix split",
-    category: "leisure" as const,
-    friend: "Alex R.",
-    date: "Apr 1",
-    amount: 7.99,
-    positive: true,
-  },
-];
 
 const SMART_TIPS = [
   "Sarah Jenkins usually settles within 24 hrs — no need to send a reminder yet.",
@@ -138,7 +140,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ActivityRow({ item, showDivider }: { item: typeof RECENT_ACTIVITY[0]; showDivider: boolean }) {
+function ActivityRow({ item, showDivider }: { item: Activity; showDivider: boolean }) {
   return (
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 1.75 }}>
@@ -206,16 +208,18 @@ export default function Dashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [summary, setSummary] = useState<Summary>({
-    net_balance: "0",
-    total_lent: "0",
-    total_borrowed: "0",
-  });
+  const [summary, setSummary] = useState<Summary>({ net_balance: "0", total_lent: "0", total_borrowed: "0" });
+  const [activity, setActivity] = useState<Activity[]>([]);
 
   useEffect(() => {
     fetch("/api/transaction/summary")
       .then((res) => res.json() as Promise<Summary>)
       .then(setSummary)
+      .catch(() => {});
+
+    fetch("/api/transaction")
+      .then((res) => res.json() as Promise<{ transactions: ApiTransaction[] }>)
+      .then(({ transactions }) => setActivity(transactions.map(toActivity)))
       .catch(() => {});
   }, []);
 
@@ -551,7 +555,7 @@ export default function Dashboard() {
               </Button>
             </Box>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {RECENT_ACTIVITY.slice(0, 4).map((item) => (
+              {activity.slice(0, 4).map((item) => (
                 <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 2, cursor: "pointer" }}>
                   <Box
                     sx={{
@@ -608,8 +612,8 @@ export default function Dashboard() {
                   View all
                 </Button>
               </Box>
-              {RECENT_ACTIVITY.map((item, i) => (
-                <ActivityRow key={item.id} item={item} showDivider={i < RECENT_ACTIVITY.length - 1} />
+              {activity.map((item, i) => (
+                <ActivityRow key={item.id} item={item} showDivider={i < activity.length - 1} />
               ))}
             </Card>
 
