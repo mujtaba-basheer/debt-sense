@@ -14,11 +14,14 @@ export async function handleGetList() {
     LIMIT 20
   `;
 
-  return new Response(JSON.stringify({ transactions: rows as TransactionWithFriend[] }), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+  return new Response(
+    JSON.stringify({ transactions: rows as TransactionWithFriend[] }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=10",
+      },
     },
-  });
+  );
 }

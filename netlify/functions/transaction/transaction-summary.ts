@@ -22,7 +22,7 @@ export async function handleGetSummary() {
     status: 200,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=10",
     },
   });
 }

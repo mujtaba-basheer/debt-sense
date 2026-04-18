@@ -14,14 +14,11 @@ export async function handleGetSummaryByFriend(friendId: string) {
     total_borrowed: string;
   };
 
-  return new Response(
-    JSON.stringify({ total_lent, total_borrowed }),
-    {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=1800, stale-while-revalidate=60",
-      },
-    }
-  );
+  return new Response(JSON.stringify({ total_lent, total_borrowed }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=10",
+    },
+  });
 }
