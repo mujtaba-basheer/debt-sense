@@ -35,6 +35,7 @@ import {
   type AddTransactionValues,
 } from "@/logic/transaction";
 import type { Friend } from "@/types/friend";
+import { apiFetch } from "@/utils";
 
 const CATEGORIES = [
   { value: "dining", label: "Dining", icon: <RestaurantRoundedIcon sx={{ fontSize: 18 }} /> },

@@ -24,6 +24,7 @@ import {
   addFriendInitialValues,
   type AddFriendValues,
 } from "@/logic/friend";
+import { apiFetch } from "@/utils";
 
 interface Props {
   open: boolean;
@@ -60,7 +61,9 @@ export default function AddFriendModal({ open, onClose, onAdded }: Props) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        helpers.setStatus({ serverError: data.error ?? "Something went wrong" });
+        helpers.setStatus({
+          serverError: data.error ?? "Something went wrong",
+        });
         helpers.setSubmitting(false);
         return;
       }
