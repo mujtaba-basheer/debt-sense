@@ -9,13 +9,17 @@ export interface TransactionSummary {
 export async function handleGetSummary() {
   const rows = await sql`
     SELECT
-      COALESCE(SUM(amount) FILTER (WHERE type = 'lent'     AND status = 'pending'), 0)::text AS total_lent,
-      COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed' AND status = 'pending'), 0)::text AS total_borrowed,
-      (
+      COALESCE(SUM(net) FILTER (WHERE net > 0), 0)::text AS total_lent,
+      COALESCE(SUM(-net) FILTER (WHERE net < 0), 0)::text AS total_borrowed,
+      COALESCE(SUM(net), 0)::text AS net_balance
+    FROM (
+      SELECT
+        friend_id,
         COALESCE(SUM(amount) FILTER (WHERE type = 'lent'     AND status = 'pending'), 0) -
-        COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed' AND status = 'pending'), 0)
-      )::text AS net_balance
-    FROM transactions
+        COALESCE(SUM(amount) FILTER (WHERE type = 'borrowed' AND status = 'pending'), 0) AS net
+      FROM transactions
+      GROUP BY friend_id
+    ) AS friend_balances
   `;
 
   return new Response(JSON.stringify(rows[0] as TransactionSummary), {

@@ -483,6 +483,7 @@ export default function Dashboard() {
                 endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
                 sx={{ color: COLORS.primary, fontWeight: 700, fontSize: "0.875rem", p: 0, "&:hover": { bgcolor: "transparent" } }}
                 disableRipple
+                onClick={() => navigate("/activity")}
               >
                 See All
               </Button>
@@ -519,6 +520,7 @@ export default function Dashboard() {
                   endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
                   sx={{ color: COLORS.primary, fontWeight: 600, fontSize: "0.8125rem", p: 0, "&:hover": { bgcolor: "transparent" } }}
                   disableRipple
+                  onClick={() => navigate("/activity")}
                 >
                   View all
                 </Button>
