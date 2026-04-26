@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { enqueueSnackbar } from "notistack";
 
 export type UserRole = "admin" | "viewer";
 
@@ -23,6 +25,7 @@ const TOKEN_KEY = "ds_token";
 const USER_KEY = "ds_user";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<AuthUser | null>(() => {
     const stored = localStorage.getItem(USER_KEY);
@@ -44,10 +47,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-  }
+  }, []);
+
+  useEffect(() => {
+    function handleSessionExpired() {
+      logout();
+      navigate("/login", { replace: true });
+      enqueueSnackbar("Your session has expired. Please log in again.", { variant: "warning" });
+    }
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("auth:session-expired", handleSessionExpired);
+  }, [logout, navigate]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAdmin: user?.role === "admin" }}>

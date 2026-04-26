@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider, CssBaseline } from '@mui/material'
+import { SnackbarProvider } from 'notistack'
 import '@fontsource/manrope/400.css'
 import '@fontsource/manrope/600.css'
 import '@fontsource/manrope/700.css'
@@ -17,9 +18,11 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <SnackbarProvider maxSnack={3} autoHideDuration={4000} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </SnackbarProvider>
       </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
