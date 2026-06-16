@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import FriendsList from "@/pages/FriendsList";
@@ -9,8 +9,16 @@ import Login from "@/pages/Login";
 import { useAuth } from "@/context/AuthContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const location = useLocation();
+
   if (!token) return <Navigate to="/login" replace />;
+
+  if (user?.friend_id) {
+    const allowed = `/friends/${user.friend_id}`;
+    if (location.pathname !== allowed) return <Navigate to={allowed} replace />;
+  }
+
   return <>{children}</>;
 }
 
