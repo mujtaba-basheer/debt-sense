@@ -5,6 +5,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: "admin" | "viewer";
+  friend_id: string | null;
 }
 
 function extractToken(req: Request): string | null {
@@ -30,6 +31,15 @@ export function requireAdmin(req: Request): AuthUser {
   const user = verifyAuth(req);
   if (user.role !== "admin") {
     throw { status: 403, message: "Admin access required" };
+  }
+  return user;
+}
+
+// Verifies auth and ensures scoped users can only access their assigned friend.
+export function requireFriendAccess(req: Request, friendId: string): AuthUser {
+  const user = verifyAuth(req);
+  if (user.friend_id !== null && user.friend_id !== friendId) {
+    throw { status: 403, message: "Access denied" };
   }
   return user;
 }

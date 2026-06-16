@@ -8,6 +8,7 @@ interface DbUser {
   email: string;
   password_hash: string;
   role: "admin" | "viewer";
+  friend_id: string | null;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -38,13 +39,13 @@ export async function handleLogin(req: Request) {
   if (!secret) throw new Error("JWT_SECRET env var is not set");
 
   const token = jwt.sign(
-    { sub: user.id, name: user.name, email: user.email, role: user.role },
+    { sub: user.id, name: user.name, email: user.email, role: user.role, friend_id: user.friend_id ?? null },
     secret,
     { expiresIn: "7d" }
   );
 
   return json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, friend_id: user.friend_id ?? null },
   });
 }

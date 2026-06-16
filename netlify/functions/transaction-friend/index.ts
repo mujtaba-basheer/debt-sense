@@ -2,7 +2,7 @@ import type { Config, Context } from "@netlify/functions";
 import { handleGetByFriend } from "./transaction-list";
 import { handleGetSummaryByFriend } from "./transaction-summary";
 import { handleSettleAllByFriend } from "./settle-all";
-import { verifyAuth, requireAdmin, authErrorResponse } from "../lib/auth";
+import { requireAdmin, requireFriendAccess, authErrorResponse } from "../lib/auth";
 
 export const config: Config = {
   path: [
@@ -23,7 +23,7 @@ export default async function handler(req: Request, ctx: Context) {
 
     switch (req.method) {
       case "GET":
-        verifyAuth(req);
+        requireFriendAccess(req, friendId);
         return isSummary
           ? handleGetSummaryByFriend(friendId)
           : handleGetByFriend(friendId);

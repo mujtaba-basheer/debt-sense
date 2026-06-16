@@ -3,7 +3,7 @@ import { handleGet } from "./friends-list";
 import { handleGetById } from "./friends-get";
 import { handlePost } from "./friends-add";
 import { handleDelete } from "./friends-delete";
-import { verifyAuth, requireAdmin, authErrorResponse } from "../lib/auth";
+import { verifyAuth, requireAdmin, requireFriendAccess, authErrorResponse } from "../lib/auth";
 
 export const config: Config = {
   path: ["/api/friend", "/api/friend/:id"],
@@ -15,8 +15,13 @@ export default async function handler(req: Request, ctx: Context) {
   try {
     switch (req.method) {
       case "GET":
-        verifyAuth(req);
-        return id ? handleGetById(id) : handleGet();
+        if (id) {
+          requireFriendAccess(req, id);
+          return handleGetById(id);
+        }
+        const user = verifyAuth(req);
+        if (user.friend_id !== null) throw { status: 403, message: "Access denied" };
+        return handleGet();
       case "POST":
         requireAdmin(req);
         return handlePost(req);
