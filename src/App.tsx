@@ -14,6 +14,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RootRedirect() {
+  const { user } = useAuth();
+  return <Navigate to={user?.friend_id ? `/friends/${user.friend_id}` : "/dashboard"} replace />;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -25,7 +30,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/friends" element={<FriendsList />} />
         <Route path="/friends/:friendId" element={<FriendStatement />} />

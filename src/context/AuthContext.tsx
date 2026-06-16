@@ -9,6 +9,7 @@ interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  friend_id: string | null;
 }
 
 interface AuthContextValue {

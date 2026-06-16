@@ -48,7 +48,7 @@ export default function Login() {
           return;
         }
         login(data.token, data.user);
-        navigate("/dashboard", { replace: true });
+        navigate(data.user.friend_id ? `/friends/${data.user.friend_id}` : "/dashboard", { replace: true });
       } catch {
         setServerError("Network error. Please check your connection.");
       } finally {
