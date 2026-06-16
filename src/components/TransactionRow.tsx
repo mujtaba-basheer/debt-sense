@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -20,6 +21,7 @@ import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
 import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { COLORS } from "@/theme";
 import { fmt, CATEGORY_ICONS, apiFetch } from "@/utils";
 
@@ -54,6 +56,7 @@ export default function TransactionRow({
   negativeColor = COLORS.tertiary,
   status,
 }: Props) {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -71,6 +74,11 @@ export default function TransactionRow({
     setMenuAnchor(null);
     setSheetOpen(false);
   };
+
+  function handleEdit() {
+    closeAll();
+    navigate(`/transactions/${id}/edit`);
+  }
 
   async function handleSettle() {
     closeAll();
@@ -193,6 +201,14 @@ export default function TransactionRow({
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
         slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180 } } }}
       >
+        <MenuItem onClick={handleEdit} sx={{ gap: 1 }}>
+          <ListItemIcon sx={{ minWidth: 0 }}>
+            <EditOutlinedIcon fontSize="small" sx={{ color: COLORS.onSurfaceVariant }} />
+          </ListItemIcon>
+          <ListItemText primary={
+            <Typography sx={{ fontSize: "0.875rem", fontWeight: 500 }}>Edit</Typography>
+          } />
+        </MenuItem>
         {!isSettled && (
           <MenuItem onClick={handleSettle} sx={{ gap: 1 }}>
             <ListItemIcon sx={{ minWidth: 0 }}>
@@ -252,6 +268,22 @@ export default function TransactionRow({
             </Typography>
           )}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<EditOutlinedIcon />}
+              onClick={handleEdit}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 700,
+                borderColor: `${COLORS.outlineVariant}66`,
+                color: COLORS.onSurface,
+                "&:hover": { borderColor: COLORS.outline, bgcolor: COLORS.surfaceContainerLow },
+              }}
+            >
+              Edit
+            </Button>
             {!isSettled && (
               <Button
                 fullWidth

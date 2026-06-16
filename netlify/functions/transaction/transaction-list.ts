@@ -3,6 +3,27 @@ import type { Transaction } from "../../../src/types/transaction";
 
 export type TransactionWithFriend = Transaction & { friend_name: string };
 
+export async function handleGetById(id: string) {
+  const rows = await sql`
+    SELECT t.*, f.name AS friend_name
+    FROM transactions t
+    JOIN friends f ON f.id = t.friend_id
+    WHERE t.id = ${id}
+  `;
+
+  if (rows.length === 0) {
+    return new Response(JSON.stringify({ error: "Transaction not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({ transaction: rows[0] as TransactionWithFriend }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export async function handleGetLatest() {
   const rows = await sql`
     SELECT

@@ -1,9 +1,10 @@
 import type { Config, Context } from "@netlify/functions";
 import { handlePost } from "./transaction-add";
-import { handleGetLatest, handleGetAll } from "./transaction-list";
+import { handleGetLatest, handleGetAll, handleGetById } from "./transaction-list";
 import { handleGetSummary } from "./transaction-summary";
 import { handleDelete } from "./transaction-delete";
 import { handleSettle } from "./transaction-settle";
+import { handlePatch } from "./transaction-edit";
 import { verifyAuth, requireAdmin, authErrorResponse } from "../lib/auth";
 
 export const config: Config = {
@@ -29,10 +30,14 @@ export default async function handler(req: Request, ctx: Context) {
         verifyAuth(req);
         if (isSummary) return handleGetSummary();
         if (isLatest) return handleGetLatest();
+        if (id) return handleGetById(id);
         return handleGetAll(url);
       case "POST":
         requireAdmin(req);
         return handlePost(req);
+      case "PATCH":
+        requireAdmin(req);
+        return handlePatch(id!, req);
       case "DELETE":
         requireAdmin(req);
         return handleDelete(id!);

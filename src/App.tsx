@@ -4,6 +4,7 @@ import Dashboard from "@/pages/Dashboard";
 import FriendsList from "@/pages/FriendsList";
 import FriendStatement from "@/pages/FriendStatement";
 import AddTransaction from "@/pages/AddTransaction";
+import EditTransaction from "@/pages/EditTransaction";
 import Activity from "@/pages/Activity";
 import Login from "@/pages/Login";
 import { useAuth } from "@/context/AuthContext";
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/friends" element={<FriendsList />} />
         <Route path="/friends/:friendId" element={<FriendStatement />} />
         <Route path="/transactions/add" element={<AddTransaction />} />
+        <Route path="/transactions/:id/edit" element={<EditTransaction />} />
         <Route path="/activity" element={<Activity />} />
       </Route>
     </Routes>
